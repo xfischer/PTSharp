@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -59,7 +59,6 @@ namespace PTSharp
             r.FireflySamples = 0;
             r.FireflyThreshold = 1;
             r.NumCPU = Environment.ProcessorCount;
-
             return r;
         }
 
@@ -92,14 +91,16 @@ namespace PTSharp
             Camera camera = this.Camera;
             Sampler sampler = this.Sampler;
             Buffer buf = this.PBuffer;
-            int w = buf.W;
-            int h = buf.H;
+            (int w, int h) = (buf.W, buf.H);
             int spp = this.SamplesPerPixel;
             int sppRoot = (int)(Math.Sqrt((double)(this.SamplesPerPixel)));
             int ncpu = 1;
             scene.Compile();
+
             scene.rays = 0;
+
             Random rand = new Random();
+
             double fu, fv;
           
             for (int i = 0; i < ncpu; i++)
@@ -108,7 +109,7 @@ namespace PTSharp
                 {
                     for (int x = 0; x < w; x++)
                     {
-                        if (this.StratifiedSampling)
+                        if (StratifiedSampling)
                         {
                             for (int u = 0; u < sppRoot; u++)
                             {
@@ -135,9 +136,8 @@ namespace PTSharp
                             }
                         }
                         // Adaptive Sampling
-                        if (this.AdaptiveSamples > 0)
+                        if (AdaptiveSamples > 0)
                         {
-
                             double v = buf.StandardDeviation(x, y).MaxComponent();
                             v = Util.Clamp(v / AdaptiveThreshold, 0, 1);
                             v = Math.Pow(v, AdaptiveExponent);
@@ -153,17 +153,17 @@ namespace PTSharp
                             }
                         }
 
-                        if (this.FireflySamples > 0)
+                        if (FireflySamples > 0)
                         {
-                            if (this.PBuffer.StandardDeviation(x, y).MaxComponent() > this.FireflyThreshold)
+                            if (PBuffer.StandardDeviation(x, y).MaxComponent() > FireflyThreshold)
                             {
-                                for (int e = 0; e < this.FireflySamples; e++)
+                                for (int e = 0; e < FireflySamples; e++)
                                 {
                                     fu = rand.NextDouble();
                                     fv = rand.NextDouble();
                                     Ray ray = camera.CastRay(x, y, w, h, fu, fv, rand);
                                     Color sample = sampler.Sample(scene, ray, rand);
-                                    this.PBuffer.AddSample(x, y, sample);
+                                    PBuffer.AddSample(x, y, sample);
                                 }
                             }
                         }
