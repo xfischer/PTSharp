@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public delegate double func(Vector d);
+    internal delegate double func(Vector d);
 
-    class SphericalHarmonic : SDF, Shape
+    class SphericalHarmonic : IShape, SDF
     {
         Material PositiveMaterial;
         Material NegativeMaterial;
         func harmonicFunction;
         Mesh mesh;
         
-        Shape NewSphericalHarmonic(int l, int m, Material pm, Material nm)
+        IShape NewSphericalHarmonic(int l, int m, Material pm, Material nm)
         {
             SphericalHarmonic sh = new SphericalHarmonic();
             sh.PositiveMaterial = pm;
@@ -25,7 +25,7 @@ namespace PTSharp
             return sh;
         }
 
-        public Material MaterialAt(Vector p)
+        Material IShape.MaterialAt(Vector p)
         {
             double h = this.EvaluateHarmonic(p);
             if (h < 0)
@@ -39,12 +39,12 @@ namespace PTSharp
 
         }
 
-        public void Compile()
+        void IShape.Compile()
         {
             this.mesh.Compile();
         }
 
-        public Box BoundingBox()
+        Box BoundingBox()
         {
             double r = 1;
             return new Box(new Vector(-r, -r, -r), new Vector(r, r, r));
@@ -60,7 +60,7 @@ namespace PTSharp
             return new Hit(this, hit.T, null);
         }
 
-        public Vector UV(Vector p)
+        Vector IShape.UV(Vector p)
         {
             double u = Math.Atan2(p.Z, p.X);
             double v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
@@ -69,7 +69,7 @@ namespace PTSharp
             return new Vector(u, v, 0);
         }
         
-        public Vector NormalAt(Vector p)
+        Vector IShape.NormalAt(Vector p)
         {
             double e = 0.0001;
             double x = p.X;
@@ -354,14 +354,14 @@ namespace PTSharp
             return f;
         }
 
+        public Box GetBoundingBox()
+        {
+            throw new NotImplementedException();
+        }
+
         double SDF.Evaluate(Vector p)
         {
             throw new NotImplementedException();
         }
     }
-    
 }
-
-
-    
-
