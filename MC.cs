@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,12 +27,10 @@ namespace PTSharp
                 {
                     for (int z = 0; z < nz - 1; z++)
                     {
-                        double x0 = (double)x * sx + min.X;
-                        double y0 = (double)y * sy + min.Y;
-                        double z0 = (double)z * sz + min.Z;
-                        double x1 = x0 + sx;
-                        double y1 = y0 + sy;
-                        double z1 = z0 + sz;
+                        double x0, y0, z0;
+                        double x1, y1, z1;
+                        (x0, y0, z0) = (((double)x * sx + min.X), ((double)y * sy + min.Y),((double)z * sz + min.Z));
+                        (x1, y1, z1) = (x0 + sx, y0 + sy, z0 + sz);
                         
                         Vector[] p = new Vector[8];
                         p[0] = new Vector(x0, y0, z0);
@@ -49,13 +47,10 @@ namespace PTSharp
                         {
                             v[i] = sdf.Evaluate(p[i]);
                         }
-
-                        //triangles.Append(mcPolygonize(p, v, 0));
                         merged = mcPolygonize(p, v, 0);
                     }
                 }
             }
-            //return NewMesh(triangles)
             return Mesh.NewMesh(merged);
         }
         
@@ -90,10 +85,7 @@ namespace PTSharp
 
             for (int i = 0; i < count; i++)
             {
-                Triangle triangle = new Triangle();
-                triangle.V3 = points[table[i * 3 + 0]];
-                triangle.V2 = points[table[i * 3 + 1]];
-                triangle.V1 = points[table[i * 3 + 2]];
+                Triangle triangle = new Triangle(points[table[i * 3 + 2]], points[table[i * 3 + 1]], points[table[i * 3 + 0]]);
                 triangle.FixNormals();
                 result[i] = triangle;
             }
