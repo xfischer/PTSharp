@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,35 +6,34 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public class Sphere : Shape
-    {
-        
-        public Vector Center;
-        public double Radius;
-        public Material SphereMaterial;
+    public class Sphere : IShape
+    {   
+        internal Vector Center;
+        internal double Radius;
+        private Material SphereMaterial;
         Box Box;
 
         Sphere(Vector center, double radius, Material material, Box box)
         {
-            this.Center = center;
-            this.Radius = radius;
-            this.SphereMaterial = material;
-            this.Box = box;
+            Center = center;
+            Radius = radius;
+            SphereMaterial = material;
+            Box = box;
         }
         
-        public static Sphere NewSphere(Vector center, double radius, Material material) {
+        internal static Sphere NewSphere(Vector center, double radius, Material material) {
             Vector min = new Vector(center.X - radius, center.Y - radius, center.Z - radius);
             Vector max = new Vector(center.X + radius, center.Y + radius, center.Z + radius);
             Box box = new Box(min, max);
             return new Sphere(center, radius, material, box);
         }
-        
-        public Box BoundingBox()
+
+        Box IShape.GetBoundingBox()
         {
             return this.Box;
         }
 
-        public Hit Intersect(Ray r) {
+        Hit IShape.Intersect(Ray r) {
             Vector to = r.Origin.Sub(this.Center);
             double b = to.Dot(r.Direction);
             double c = to.Dot(to) - this.Radius * this.Radius;
@@ -56,7 +55,7 @@ namespace PTSharp
             return Hit.NoHit;
         }
 
-        public Vector UV(Vector p) {
+        Vector IShape.UV(Vector p) {
             p = p.Sub(this.Center);
             double u = Math.Atan2(p.Z, p.X);
             double v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
@@ -64,18 +63,16 @@ namespace PTSharp
             v = (v + Math.PI / 2) / Math.PI;
             return new Vector(u, v, 0);
         }
-        
-        public Material MaterialAt(Vector p) {
-            return this.SphereMaterial;
-        }
-
-        public Vector NormalAt(Vector p) {
+       
+        Vector IShape.NormalAt(Vector p) {
             return p.Sub(this.Center).Normalize();
         }
 
-        public void Compile()
+        void IShape.Compile() { }
+        
+        Material IShape.MaterialAt(Vector v)
         {
-
+            return this.SphereMaterial;
         }
     }
 }
