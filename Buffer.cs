@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,23 +24,23 @@ namespace PTSharp
 
         public Buffer(int width, int height)
         {
-            this.W = width;
-            this.H = height;
+            W = width;
+            H = height;
             imageBuffer = new byte[256 * 4 * height];
-            this.Pixels = new Pixel[width * height];
+            Pixels = new Pixel[width * height];
             PixelList = new List<Pixel>(width * height);
 
-            for (int i =0; i< this.Pixels.Length; i++)
+            for (int i = 0; i < Pixels.Length; i++)
             {
-                Pixels[i] = new Pixel(0, new PTSharp.Color(0, 0, 0), new PTSharp.Color(0, 0, 0));
+                Pixels[i] = new Pixel(0, new Color(0, 0, 0), new Color(0, 0, 0));
             }
         }
 
         public Buffer(int width, int height, Pixel[] pbuffer)
         {
-            this.W = width;
-            this.H = height;
-            this.Pixels = pbuffer;
+            W = width;
+            H = height;
+            Pixels = pbuffer;
         }
 
         public static Buffer NewBuffer(int w, int h)
@@ -55,34 +55,34 @@ namespace PTSharp
 
         public Buffer Copy()
         {
-            Pixel[] pixcopy = new Pixel[this.W * this.H];
-            Array.Copy(this.Pixels, 0, pixcopy, 0, this.Pixels.Length);
-            return new Buffer(this.W, this.H, pixcopy);
+            Pixel[] pixcopy = new Pixel[W * H];
+            Array.Copy(Pixels, 0, pixcopy, 0, Pixels.Length);
+            return new Buffer(W, H, pixcopy);
         }
         
         public void AddSample(int x, int y, Color sample)
         {
-            this.Pixels[y * this.W + x].AddSample(sample);
+            Pixels[y * W + x].AddSample(sample);
         }
         
         public int Samples(int x, int y)
         {
-            return this.Pixels[y * this.W + x].Samples;
+            return Pixels[y * W + x].Samples;
         }
         
         public Color Color(int x, int y)
         {
-            return this.Pixels[y * this.W + x].Color();
+            return Pixels[y * W + x].Color();
         }
         
         public Color Variance(int x, int y)
         {
-            return this.Pixels[y * this.W + x].Variance();
+            return Pixels[y * W + x].Variance();
         }
         
         public Color StandardDeviation(int x, int y)
         {
-            return this.Pixels[y * this.W + x].StandardDeviation();
+            return Pixels[y * W + x].StandardDeviation();
         }
 
         public Bitmap Image(Channel channel)
@@ -92,30 +92,30 @@ namespace PTSharp
 
             if (channel == Channel.SamplesChannel)
             {
-                foreach (Pixel pix in this.Pixels)
+                foreach (Pixel pix in Pixels)
                 {
                     maxSamples = Math.Max(maxSamples, pix.Samples);
                 }
             }
 
-            for (int y = 0; y < this.H; y++)
+            for (int y = 0; y < H; y++)
             {
-                for (int x = 0; x < this.W; x++)
+                for (int x = 0; x < W; x++)
                 {
                     Color pixelColor = new Color();
                     switch (channel)
                     {
                         case Channel.ColorChannel:
-                            pixelColor = this.Pixels[y * this.W + x].Color().Pow(1 / 2.2);
+                            pixelColor = Pixels[y * W + x].Color().Pow(1 / 2.2);
                             break;
                         case Channel.VarianceChannel:
-                            pixelColor = Pixels[y * this.W + x].Variance();
+                            pixelColor = Pixels[y * W + x].Variance();
                             break;
                         case Channel.StandardDeviationChannel:
-                            pixelColor = Pixels[y * this.W + x].StandardDeviation();
+                            pixelColor = Pixels[y * W + x].StandardDeviation();
                             break;
                         case Channel.SamplesChannel:
-                            float p = (float)(Pixels[y * this.W + x].Samples / maxSamples);
+                            float p = (float)(Pixels[y * W + x].Samples / maxSamples);
                             pixelColor = new Color(p, p, p);
                             break;
                     }
@@ -133,9 +133,9 @@ namespace PTSharp
 
             public Pixel()
             {
-                this.Samples = 0;
-                this.M = new Color(0, 0, 0);
-                this.V = new Color(0, 0, 0);
+                Samples = 0;
+                M = new Color(0, 0, 0);
+                V = new Color(0, 0, 0);
             }
 
             public Pixel(int Samples, Color M, Color V)
@@ -147,11 +147,11 @@ namespace PTSharp
 
             public void AddSample(Color sample)
             {
-                this.Samples++;
+                Samples++;
 
-                if (this.Samples == 1)
+                if (Samples == 1)
                 {
-                    this.M = sample;
+                    M = sample;
                     return;
                 }
 
@@ -176,7 +176,7 @@ namespace PTSharp
 
             public Color StandardDeviation()
             {
-                return this.Variance().Pow(0.5);
+                return Variance().Pow(0.5);
             }
         }
     }
