@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,35 +6,32 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public class Hit
+    class Hit
     {
         static double INF = 1e9;
-        public Shape Shape;
+        internal IShape Shape;
         public double T;
         public HitInfo HInfo;
 
         public static Hit NoHit = new Hit(null, INF, null);
 
-        public Hit(Shape shape, double t, HitInfo hinfo)
+        internal Hit(IShape shape, double t, HitInfo hinfo)
         {
-            this.Shape = shape;
-            this.T = t;
-            this.HInfo = hinfo;
+            Shape = shape;
+            T = t;
+            HInfo = hinfo;
         }
-        
-        public Boolean Ok()
-        {
-            return this.T < INF;
-        }
-        
+
+        public Boolean Ok() => T < INF;
+
         public HitInfo Info(Ray r)
         {
-            if (this.HInfo != null)
+            if (HInfo != null)
             {
-                return this.HInfo;
+                return HInfo;
             }
-            Shape shape = this.Shape;
-            Vector position = r.Position(this.T);
+            IShape shape = Shape;
+            Vector position = r.Position(T);
             Vector normal = this.Shape.NormalAt(position);
             Material material = Material.MaterialAt(this.Shape, normal);
             Boolean inside = false;
@@ -54,14 +51,14 @@ namespace PTSharp
 
     public class HitInfo
     {
-        public Shape shape;
-        public Vector position;
-        public Vector normal;
+        private IShape shape;
+        private Vector position;
+        private Vector normal;
         public Ray Ray;
-        public Material material;
+        internal Material material;
         public Boolean inside;
 
-        public HitInfo(Shape shape, Vector position, Vector normal, Ray r, Material mat, Boolean inside)
+        internal HitInfo(IShape shape, Vector position, Vector normal, Ray r, Material mat, Boolean inside)
         {
             this.shape = shape;
             this.position = position;
@@ -72,5 +69,3 @@ namespace PTSharp
         }
     }
 }
-
-
