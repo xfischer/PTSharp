@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,40 +6,35 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public class Material
+    struct Material
     {
         public Color Color;
-        public Texture Texture;
-        public Texture NormalTexture;
-        public Texture BumpTexture;
-        public Texture GlossTexture;
+        public ITexture Texture;
+        public ITexture NormalTexture;
+        public ITexture BumpTexture;
+        public ITexture GlossTexture;
         public double BumpMultiplier;
         public double Emittance;
         public double Index;
         public double Gloss;
         public double Tint;
         public double Reflectivity;
-        public Boolean Transparent;
-        
-        public Material()
-        {
+        public bool Transparent;
 
-        }
-
-        public Material(Color color, Texture texture, Texture normaltexture, Texture bumptexture, Texture glosstexture, double b, double e, double i, double g, double tint, double r, Boolean t)
+        public Material(Color color, ITexture texture, ITexture normaltexture, ITexture bumptexture, ITexture glosstexture, double b, double e, double i, double g, double tint, double r, Boolean t)
         {
-            this.Color = color;
-            this.Texture = texture;
-            this.NormalTexture = normaltexture;
-            this.BumpTexture = bumptexture;
-            this.GlossTexture = glosstexture;
-            this.BumpMultiplier = b;
-            this.Emittance = e;
-            this.Index = i;
-            this.Gloss = g;
-            this.Tint = tint;
-            this.Reflectivity = r;
-            this.Transparent = t;
+            Color = color;
+            Texture = texture;
+            NormalTexture = normaltexture;
+            BumpTexture = bumptexture;
+            GlossTexture = glosstexture;
+            BumpMultiplier = b;
+            Emittance = e;
+            Index = i;
+            Gloss = g;
+            Tint = tint;
+            Reflectivity = r;
+            Transparent = t;
         }
 
         public static Material DiffuseMaterial(Color color)
@@ -59,7 +54,7 @@ namespace PTSharp
 
         public static Material ClearMaterial(double index, double gloss)
         {
-            return new Material(new Color(0,0,0), null, null, null, null, 1, 0, index, gloss, 0, -1, true);
+            return new Material(new Color(0, 0, 0), null, null, null, null, 1, 0, index, gloss, 0, -1, true);
         }
 
         public static Material TransparentMaterial(Color color, double index, double gloss, double tint)
@@ -77,10 +72,10 @@ namespace PTSharp
             return new Material(color, null, null, null, null, 1, emittance, 1, 0, 0, -1, false);
         }
 
-        public static Material MaterialAt(Shape shape, Vector point)
+        internal static Material MaterialAt(IShape shape, Vector point)
         {
-            Material material = shape.MaterialAt(point);
-            Vector uv = shape.UV(point);
+            var material = shape.MaterialAt(point);
+            var uv = shape.UV(point);
             if (material.Texture != null)
             {
                 material.Color = material.Texture.Sample(uv.X, uv.Y);
@@ -92,5 +87,5 @@ namespace PTSharp
             }
             return material;
         }
-    }
+    };
 }
