@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +8,11 @@ namespace PTSharp
 {
     public class Color
     {
-        public double R; 
-        public double G; 
-        public double B; 
-        public int alpha;
-        
+        private double r;
+        private double g;
+        private double b;
+        private int alpha;
+
         public Color(Color c)
         {
             this.R = c.R;
@@ -29,15 +29,19 @@ namespace PTSharp
 
         public static Color Black = new Color(0, 0, 0);
         public static Color White = new Color(1, 1, 1);
+        public double R { get => r; set => r = value; }
+        public double G { get => g; set => g = value; }
+        public double B { get => b; set => b = value; }
+        public int Alpha { get => alpha; set => alpha = value; }
 
-        public Color()
-        {
-
-        }
+        public Color() { }
 
         public void LoadFromStringArray(string[] data)
         {
-            if (data.Length != 4) return;
+            if (data.Length != 4)
+            {
+                return;
+            }
             R = double.Parse(data[1]);
             G = double.Parse(data[2]);
             B = double.Parse(data[3]);
@@ -50,10 +54,11 @@ namespace PTSharp
         
         public static Color HexColor(int x)
         {
-            double red = Convert.ToDouble(x >> 16 & 0xff)/ 255;
-            double green = Convert.ToDouble(x >> 8 & 0xff)/ 255;
-            double blue = Convert.ToDouble(x & 0xff)/ 255;
-            return new Color(red, green, blue).Pow(2.2);
+            var red = Convert.ToDouble((x >> 16) & 0xff) / 255;
+            var green = Convert.ToDouble((x >> 8) & 0xff) / 255;
+            var blue = Convert.ToDouble(x & 0xff)/ 255;
+            Color color = new Color(red, green, blue);
+            return color.Pow(2.2);
         }
         
         public Color Pow(double b)
@@ -63,22 +68,22 @@ namespace PTSharp
 
         public int getIntFromColor(double red, double green, double blue)
         {
-            UInt16 r = Convert.ToUInt16(Math.Max(0, Math.Min(255, red * 255)));
-            UInt16 g = Convert.ToUInt16(Math.Max(0, Math.Min(255, green * 255)));
-            UInt16 b = Convert.ToUInt16(Math.Max(0, Math.Min(255, blue * 255)));
+            ushort r = Convert.ToUInt16(Math.Max(0, Math.Min(255, red * 255)));
+            ushort g = Convert.ToUInt16(Math.Max(0, Math.Min(255, green * 255)));
+            ushort b = Convert.ToUInt16(Math.Max(0, Math.Min(255, blue * 255)));
             return 255 << 24 | r << 16 | g << 8 | b;
         }
 
         public int getIntFromColor64(double red, double green, double blue)
         {
-            UInt16 r = Convert.ToUInt16(Math.Max(0, Math.Min(65535, red * 65535)));
-            UInt16 g = Convert.ToUInt16(Math.Max(0, Math.Min(65535, green * 65535)));
-            UInt16 b = Convert.ToUInt16(Math.Max(0, Math.Min(65535, blue * 65535)));
+            ushort r = Convert.ToUInt16(Math.Max(0, Math.Min(65535, red * 65535)));
+            ushort g = Convert.ToUInt16(Math.Max(0, Math.Min(65535, green * 65535)));
+            ushort b = Convert.ToUInt16(Math.Max(0, Math.Min(65535, blue * 65535)));
             return 65535 << 24 | r << 16 | g << 8 | b;
         }
         
        public static Color Kelvin(double K)
-        {
+       {
             double red, green, blue;
             double a, b, c, x;
 
