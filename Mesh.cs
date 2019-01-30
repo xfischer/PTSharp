@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,224 +6,362 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    class Mesh : Shape
+    internal delegate double func(Vector d);
+
+    class SphericalHarmonic : IShape, SDF
     {
-        Box box;
-        Tree tree;
-        Material material;
-
-        public Triangle[] Triangles;
-        public List<Triangle> TriangleList;
+        Material PositiveMaterial;
+        Material NegativeMaterial;
+        func harmonicFunction;
+        Mesh mesh;
         
-        public Mesh() {}
-
-        public Mesh(Triangle[] triangles, Box box, Tree tree)
+        IShape NewSphericalHarmonic(int l, int m, Material pm, Material nm)
         {
-            this.Triangles = triangles;
-            this.box = box;
-            this.tree = tree;
+            SphericalHarmonic sh = new SphericalHarmonic();
+            sh.PositiveMaterial = pm;
+            sh.NegativeMaterial = nm;
+            sh.harmonicFunction = shFunc(l, m);
+            sh.mesh = new MC().NewSDFMesh(sh, sh.BoundingBox(), 0.01);
+            return sh;
         }
 
-        public Mesh(Triangle[] triangles, Box box, Tree tree, Material material)
+        Material IShape.MaterialAt(Vector p)
         {
-            this.Triangles = triangles;
-            this.box = box;
-            this.tree = tree;
-            this.material = material;
-        }
-
-        public static Mesh NewMesh(Triangle[] triangle)
-        {
-            return new Mesh(triangle, null, null);
-        }
-
-        public static Mesh NewMesh(Triangle[] triangle, Material material)
-        {
-            return new Mesh(triangle, null, null);
-        }
-
-        void dirty()
-        {
-            this.box = null;
-            this.tree = null;
-        }
-        
-        Mesh Copy()
-        {
-            Triangle[] triangle = new Triangle[this.Triangles.Length];
-            
-            for(int i=0; i<this.Triangles.Length; i++)
+            double h = this.EvaluateHarmonic(p);
+            if (h < 0)
             {
-                triangle[i] = this.Triangles[i];
+                return this.NegativeMaterial;
             }
-            return NewMesh(triangle);
-        }
-        
-        public void Compile()
-        {
-            if (this.tree == null)
+            else
             {
-                Shape[] shapes = new Shape[this.Triangles.Length];
-                
-                for(int i=0; i< this.Triangles.Length; i++)
-                {
-                    shapes[i] = this.Triangles[i];
-                }
-                this.tree = Tree.NewTree(shapes);
+                return this.PositiveMaterial;
             }
+
         }
 
-        void Add(Mesh b)
+        void IShape.Compile()
         {
-            
-            foreach(Triangle t in b.Triangles)
-            {
-                TriangleList = new List<Triangle>();
-                this.material = b.material;
-                TriangleList.Add(t);
-            }    
-            
-            this.Triangles = TriangleList.ToArray();
-            this.dirty();
+            this.mesh.Compile();
         }
-        
-        public Box BoundingBox()
-        {
-            if (this.box == null)
-            {
-                Vector min = this.Triangles[0].V1;
-                Vector max = this.Triangles[0].V1;
 
-                foreach(Triangle t in this.Triangles)
-                {
-                    min = min.Min(t.V1).Min(t.V2).Min(t.V3);
-                    max = max.Max(t.V1).Max(t.V2).Max(t.V3);
-                }
-                this.box = new Box(min, max);
-            }
-            return this.box;
+        Box BoundingBox()
+        {
+            double r = 1;
+            return new Box(new Vector(-r, -r, -r), new Vector(r, r, r));
         }
-        
+
         public Hit Intersect(Ray r)
         {
-            return this.tree.Intersect(r);
-        }
-        
-        public Vector UV(Vector p)
-        {
-            return new Vector();
-        }
-        
-        public Material MaterialAt(Vector p)
-        {
-            return new Material();
+            Hit hit = this.mesh.Intersect(r);
+            if (!hit.Ok())
+            {
+                return Hit.NoHit;
+            }
+            return new Hit(this, hit.T, null);
         }
 
-        public Vector NormalAt(Vector p)
+        Vector IShape.UV(Vector p)
         {
-            return new Vector();
-        }
-
-        Vector smoothNormalsThreshold(Vector normal, Vector[] normals, double threshold)
-        {
-            Vector result = new Vector(0,0,0);
-            foreach (Vector x in normals)
-            {
-                if (x.Dot(normal) >= threshold)
-                {
-                    result = result.Add(x);
-                }
-            }
-            return result.Normalize();
-        }
-
-        void SmoothNormalsThreshold(double radians)
-        {
-            double threshold = Math.Cos(radians);
-            Dictionary<Vector, Vector[]> lookup = new Dictionary<Vector, Vector[]>();
-
-            foreach (Triangle t in this.Triangles)
-            {
-                lookup[t.V1].Append(t.N1);
-                lookup[t.V2].Append(t.N2);
-                lookup[t.V3].Append(t.N3);
-
-            }
-            foreach (Triangle t in this.Triangles)
-            {
-                t.N1 = smoothNormalsThreshold(t.N1, lookup[t.N1], threshold);
-                t.N2 = smoothNormalsThreshold(t.N2, lookup[t.N2], threshold);
-                t.N3 = smoothNormalsThreshold(t.N3, lookup[t.N3], threshold);
-            }
+            double u = Math.Atan2(p.Z, p.X);
+            double v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
+            u = (1 - (u + Math.PI)) / (2 * Math.PI);
+            v = (v + Math.PI / 2) / Math.PI;
+            return new Vector(u, v, 0);
         }
         
-        void SmoothNormals()
+        Vector IShape.NormalAt(Vector p)
         {
-            Dictionary<Vector, Vector> lookup = new Dictionary<Vector, Vector>();
+            double e = 0.0001;
+            double x = p.X;
+            double y = p.Y;
+            double z = p.Z;
 
-            foreach (Triangle t in this.Triangles)
-            {
-                lookup[t.V1] = lookup[t.V1].Add(t.N1);
-                lookup[t.V2] = lookup[t.V2].Add(t.N2);
-                lookup[t.V3] = lookup[t.V3].Add(t.N3);
-            }
+            Vector n = new Vector(
+                this.Evaluate(new Vector(x - e, y, z)) - this.EvaluateHarmonic(new Vector(x + e, y, z)),
+                this.Evaluate(new Vector(x, y - e, z)) - this.Evaluate(new Vector(x, y + e, z)),
+                this.Evaluate(new Vector(x, y, z - e)) - this.Evaluate(new Vector(x, y, z + e))
+            );
 
-            foreach(KeyValuePair<Vector, Vector> kv in lookup)
-            {
-                lookup[kv.Key] = kv.Value.Normalize();
-            }
+            return n.Normalize();
+        }
 
-            foreach (Triangle t in this.Triangles)
+        double Evaluate(Vector p)
+        {
+            return p.Length() - Math.Abs(this.harmonicFunction(p.Normalize()));
+        }
+            
+        double EvaluateHarmonic(Vector p)
+        {
+            return this.harmonicFunction(p.Normalize());
+        }
+
+        static double sh00(Vector d)
+        {
+            return 0.282095;
+        }
+
+        double sh1n1(Vector d)
+        {
+            return -0.488603 * d.Y;
+        }
+
+        double sh10(Vector d)
+        {
+            return 0.488603 * d.Z;
+        }
+
+        double sh1p1(Vector d)
+        {
+            return -0.488603 * d.X;
+        }
+
+        double sh2n2(Vector d)
+        {
+            // 0.5 * sqrt(15/pi) * x * y
+            return 1.092548 * d.X * d.Y;
+        }
+
+        double sh2n1(Vector d)
+        {
+            // -0.5 * sqrt(15/pi) * y * z
+            return -1.092548 * d.Y * d.Z;
+        }
+
+        double sh20(Vector d)
+        {
+            // 0.25 * sqrt(5/pi) * (-x^2-y^2+2z^2)
+            return 0.315392 * (-d.X * d.X - d.Y * d.Y + 2.0 * d.Z * d.Z);
+        }
+
+        double sh2p1(Vector d)
+        {
+            // -0.5 * sqrt(15/pi) * x * z
+            return -1.092548 * d.X * d.Z;
+        }
+
+        double sh2p2(Vector d)
+        {
+            // 0.25 * sqrt(15/pi) * (x^2 - y^2)
+            return 0.546274 * (d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh3n3(Vector d)
+        {
+            // -0.25 * sqrt(35/(2pi)) * y * (3x^2 - y^2)
+            return -0.590044 * d.Y * (3.0 * d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh3n2(Vector d)
+        {
+            // 0.5 * sqrt(105/pi) * x * y * z
+            return 2.890611 * d.X * d.Y * d.Z;
+        }
+
+        double sh3n1(Vector d)
+        {
+            // -0.25 * sqrt(21/(2pi)) * y * (4z^2-x^2-y^2)
+            return -0.457046 * d.Y * (4.0 * d.Z * d.Z - d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh30(Vector d)
+        {
+            // 0.25 * sqrt(7/pi) * z * (2z^2 - 3x^2 - 3y^2)
+            return 0.373176 * d.Z * (2.0 * d.Z * d.Z - 3.0 * d.X * d.X - 3.0 * d.Y * d.Y);
+        }
+
+        double sh3p1(Vector d)
+        {
+            // -0.25 * sqrt(21/(2pi)) * x * (4z^2-x^2-y^2)
+            return -0.457046 * d.X * (4.0 * d.Z * d.Z - d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh3p2(Vector d)
+        {
+            // 0.25 * sqrt(105/pi) * z * (x^2 - y^2)
+            return 1.445306 * d.Z * (d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh3p3(Vector d)
+        {
+            // -0.25 * sqrt(35/(2pi)) * x * (x^2-3y^2)
+            return -0.590044 * d.X * (d.X * d.X - 3.0 * d.Y * d.Y);
+        }
+        double sh4n4(Vector d)
+        {
+            // 0.75 * sqrt(35/pi) * x * y * (x^2-y^2)
+            return 2.503343 * d.X * d.Y * (d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh4n3(Vector d)
+        {
+            // -0.75 * sqrt(35/(2pi)) * y * z * (3x^2-y^2)
+            return -1.770131 * d.Y * d.Z * (3.0 * d.X * d.X - d.Y * d.Y);
+        }
+
+        double sh4n2(Vector d)
+        {
+            // 0.75 * sqrt(5/pi) * x * y * (7z^2-1)
+            return 0.946175 * d.X * d.Y * (7.0 * d.Z * d.Z - 1.0);
+        }
+
+        double sh4n1(Vector d)
+        {
+            // -0.75 * sqrt(5/(2pi)) * y * z * (7z^2-3)
+            return -0.669047 * d.Y * d.Z * (7.0 * d.Z * d.Z - 3.0);
+        }
+
+        double sh40(Vector d)
+        {
+            // 3/16 * sqrt(1/pi) * (35z^4-30z^2+3)
+            double z2 = d.Z * d.Z;
+            return 0.105786 * (35.0 * z2 * z2 - 30.0 * z2 + 3.0);
+        }
+
+        double sh4p1(Vector d)
+        {
+            // -0.75 * sqrt(5/(2pi)) * x * z * (7z^2-3)
+            return -0.669047 * d.X * d.Z * (7.0 * d.Z * d.Z - 3.0);
+        }
+
+        double sh4p2(Vector d)
+        {
+            // 3/8 * sqrt(5/pi) * (x^2 - y^2) * (7z^2 - 1)
+            return 0.473087 * (d.X * d.X - d.Y * d.Y) * (7.0 * d.Z * d.Z - 1.0);
+        }
+
+        double sh4p3(Vector d)
+        {
+            // -0.75 * sqrt(35/(2pi)) * x * z * (x^2 - 3y^2)
+            return -1.770131 * d.X * d.Z * (d.X * d.X - 3.0 * d.Y * d.Y);
+        }
+
+        double sh4p4(Vector d)
+        {
+            // 3/16*sqrt(35/pi) * (x^2 * (x^2 - 3y^2) - y^2 * (3x^2 - y^2))
+            double x2 = d.X * d.X;
+            double y2 = d.Y * d.Y;
+            return 0.625836 * (x2 * (x2 - 3.0 * y2) - y2 * (3.0 * x2 - y2));
+        }
+        
+        func shFunc(int l, int m)
+        {
+            func f = null;
+
+            if (l == 0 && m == 0)
             {
-                t.N1 = lookup[t.V1];
-                t.N2 = lookup[t.V2];
-                t.N3 = lookup[t.V3]; 
+                f = sh00;
             }
-        }
-        
-        void UnitCube()
-        {
-            this.FitInside(new Box(new Vector(0, 0, 0), new Vector(1, 1, 1)), new Vector(0, 0, 0));
-            this.MoveTo(new Vector(0, 0, 0), new Vector(0.5, 0.5, 0.5));
-        }
-        
-        public void MoveTo(Vector position, Vector anchor)
-        {
-            Matrix matrix = new Matrix().Translate(position.Sub(this.BoundingBox().Anchor(anchor)));
-            this.Transform(matrix);
-        }
-        
-        public void Transform(Matrix matrix)
-        {
-            foreach(Triangle t in this.Triangles)
+            else if (l == 1 && m == -1)
             {
-                t.V1 = matrix.MulPosition(t.V1);
-                t.V2 = matrix.MulPosition(t.V2);
-                t.V3 = matrix.MulPosition(t.V3);
-                t.N1 = matrix.MulDirection(t.N1);
-                t.N2 = matrix.MulDirection(t.N2);
-                t.N3 = matrix.MulDirection(t.N3);
+                f = sh1n1;
             }
-            this.dirty();
-        }
-        
-        void FitInside(Box box, Vector anchor)
-        {
-            double scale = box.Size().Div(this.BoundingBox().Size()).MinComponent();
-            Vector extra = box.Size().Sub(this.BoundingBox().Size().MulScalar(scale));
-            Matrix matrix = new Matrix().Identity();
-            matrix = matrix.Translate(this.BoundingBox().Min.Negate());
-            matrix = matrix.Scale(new Vector(scale, scale, scale));
-            matrix = matrix.Translate(box.Min.Add(extra.Mul(anchor)));
-            this.Transform(matrix);
-        }
-        
-        void SetMaterial(Material material)
-        {
-            foreach(Triangle t in this.Triangles)
+            else if (l == 1 && m == 0)
             {
-                t.TriangleMaterial = material;
+                f = sh10;
             }
+            else if (l == 1 && m == 1)
+            {
+                f = sh1p1;
+            }
+            else if (l == 2 && m == -2)
+            {
+                f = sh2n2;
+            }
+            else if (l == 2 && m == -1)
+            {
+                f = sh2n1;
+            }
+            else if (l == 2 && m == 0)
+            {
+                f = sh20;
+            }
+            else if (l == 2 && m == 1)
+            {
+                f = sh2p1;
+            }
+            else if (l == 2 && m == 2)
+            {
+                f = sh2p2;
+            }
+            else if (l == 3 && m == -3)
+            {
+                f = sh3n3;
+            }
+            else if (l == 3 && m == -2)
+            {
+                f = sh3n2;
+            }
+            else if (l == 3 && m == -1)
+            {
+                f = sh3n1;
+            }
+            else if (l == 3 && m == 0)
+            {
+                f = sh30;
+            }
+            else if (l == 3 && m == 1)
+            {
+                f = sh3p1;
+            }
+            else if (l == 3 && m == 2)
+            {
+                f = sh3p2;
+            }
+            else if (l == 3 && m == 3)
+            {
+                f = sh3p3;
+            }
+            else if (l == 4 && m == -4)
+            {
+                f = sh4n4;
+            }
+            else if (l == 4 && m == -3)
+            {
+                f = sh4n3;
+            }
+            else if (l == 4 && m == -2)
+            {
+                f = sh4n2;
+            }
+            else if (l == 4 && m == -1)
+            {
+                f = sh4n1;
+            }
+            else if (l == 4 && m == 0)
+            {
+                f = sh40;
+            }
+            else if (l == 4 && m == 1)
+            {
+                f = sh4p1;
+            }
+            else if (l == 4 && m == 2)
+            {
+                f = sh4p2;
+            }
+            else if (l == 4 && m == 3)
+            {
+                f = sh4p3;
+            }
+            else if (l == 4 && m == 4)
+            {
+                f = sh4p4;
+            }
+            else
+            {
+                Console.WriteLine("unsupported spherical harmonic");
+            }
+            return f;
+        }
+
+        public Box GetBoundingBox()
+        {
+            throw new NotImplementedException();
+        }
+
+        double SDF.Evaluate(Vector p)
+        {
+            throw new NotImplementedException();
         }
     }
 }
