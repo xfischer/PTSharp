@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-
-    interface Func
+    interface Func : IShape
     {
         double func(double x, double y);
     }
     
-    class Function : Func, Shape
+    class Function : Func
     {
         Func Funct;
         Box Box;
@@ -27,27 +26,24 @@ namespace PTSharp
             this.Material = Material;
         }
         
-        static Shape NewFunction(Func function, Box box, Material material)
+        static IShape NewFunction(Func function, Box box, Material material)
         {
             return new Function(function, box, material);
         }
         
-        public void Compile()
-        {
+        void IShape.Compile() { }
 
-        }
-
-        public Box BoundingBox()
+        Box IShape.GetBoundingBox()
         {
             return this.Box;
         }
-        
+
         bool Contains(Vector v)
         {
             return v.Z < func(v.X, v.Y);
         }
 
-        public Hit Intersect(Ray ray)
+        Hit IShape.Intersect(Ray ray)
         {
             double step = 1.0 / 32;
             bool sign = Contains(ray.Position(step));
@@ -62,7 +58,7 @@ namespace PTSharp
             return Hit.NoHit;
         }
 
-        public Vector UV(Vector p)
+        Vector IShape.UV(Vector p)
         {
             double x1 = Box.Min.X;
             double x2 = Box.Max.X;
@@ -73,12 +69,12 @@ namespace PTSharp
             return new Vector(u, v, 0);
         }
 
-        public Material MaterialAt(Vector p)
+        Material IShape.MaterialAt(Vector p)
         {
             return this.Material;
         }
 
-        public Vector NormalAt(Vector p)
+        Vector IShape.NormalAt(Vector p)
         {
             double eps = 1e-3;
             double x = func(p.X - eps, p.Y) - func(p.X + eps, p.Y);
