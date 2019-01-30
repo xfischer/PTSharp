@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,154 +8,188 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public interface Texture
+    public class ColorTexture : ITexture
     {
-        Color Sample(double u, double v);
-        Vector NormalSample(double u, double v);
-        Vector BumpSample(double u, double v);
-        Texture Pow(double a);
-        Texture MulScalar(double a);
-    }
+        public int Width;
+        public int Height;
+        public Color[] Data;
+        
+        internal static IDictionary<string, ITexture> textures = new Dictionary<string, ITexture>();
 
-    public class ColorTexture : Texture
-    {
-        int Width;
-        int Height;
-        Color[] Data;
-        IDictionary<string, Texture> textureMap = new Dictionary<string, Texture>();
-
-        ColorTexture() {} 
-
+        internal ColorTexture()
+        {
+            Width = 0;
+            Height = 0;
+            Data = new Color[] { };
+        }
+        
         ColorTexture(int width, int height, Color[] data)
         {
-            this.Width = width;
-            this.Height = height;
-            this.Data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
-        public Texture GetTexture(String path)
+        internal ITexture LoadTexture(String path)
         {
-            Texture t;
-            if (textureMap.ContainsKey(path))
-            {
-                textureMap.TryGetValue(path, out t);
-                return t;
-            } else
-            {
-                return null;
-            }
-        }
-
-        public Texture LoadTexture(String path)
-        {
-            Console.WriteLine("Loding image...");
+            Console.WriteLine("Loading image...");
             Bitmap image = Util.LoadImage(path);
-            if(image == null)
+            if (image == null)
             {
                 Console.WriteLine("Image load failed");
-            } else
+            }
+            else
             {
                 Console.WriteLine("Load Texture >> Success");
             }
             return NewTexture(image);
         }
 
-        public static Texture NewTexture(Bitmap image)
+        internal static ITexture GetTexture(string path)
         {
-            int width = image.Width;
-            int height = image.Height;
-            Color[] data = new Color[width * height];
-
-            for (int y =0; y< height; y++)
+            if(textures.ContainsKey(path))
             {
-                for (int x = 0; x<width; x++)
-                {
-                    int index = y * height + x;
-                    System.Drawing.Color pixcolor = image.GetPixel(x, y);
-                    int alpha = pixcolor.A;
-                    int red = pixcolor.R;
-                    int green = pixcolor.G;
-                    int blue = pixcolor.B;
-                    data[index] = new Color((double)red/65535, (double)green/65535, (double)blue/65535).Pow(2.2);        
-                }
+                Console.WriteLine("Texture: "+ path + " ... OK");
+                return textures[path];
+            } else
+            {
+                Console.WriteLine("Adding texture to list...");
+                ITexture img = new ColorTexture().LoadTexture(path);
+                textures.Add(path, img);
+                return img;
             }
-            return new ColorTexture(width, height, data);
         }
         
-        public Texture Pow(double a)
+        ITexture NewTexture(Bitmap image)
         {
-            for (int i = 0; i < this.Data.Length; i++)
+            GraphicsUnit unit = GraphicsUnit.Pixel;
+            RectangleF boundsF = image.GetBounds(ref unit);
+            Rectangle bounds = new Rectangle((int)boundsF.Left, (int)boundsF.Top, (int)boundsF.Width, (int)boundsF.Height);
+
+            int yMax = (int)boundsF.Height;
+            int xMax = (int)boundsF.Width;
+
+            Color[] imgdata = new Color[xMax * yMax];
+            
+            for (int y = 0; y < yMax; y++)
             {
-                this.Data[i] = this.Data[i].Pow(a);
+                for (int x = 0; x < xMax; x++)
+                {
+                    int index = y * xMax + x;
+                    System.Drawing.Color pixelcolor = image.GetPixel(x, y);
+                    imgdata[index] = new Color((double)(pixelcolor.R)  / 255, (double)(pixelcolor.G) / 255, (double)(pixelcolor.B) / 255).Pow(2.2); 
+                }
+            }
+            return new ColorTexture(xMax, yMax, imgdata);
+        }
+        
+        ITexture ITexture.Pow(double a)
+        {
+            for (int i = 0; i < Data.Length; i++)
+            {
+                Data[i] = Data[i].Pow(a);
             }
             return this;
         }
 
-        public Texture MulScalar(double a)
+        ITexture ITexture.MulScalar(double a)
         {
-            for (int i = 0; i < this.Data.Length; i++)
+            for (int i = 0; i < Data.Length; i++)
             {
-                this.Data[i] = this.Data[i].MulScalar(a);
+                Data[i] = Data[i].MulScalar(a);
             }
             return this;
         }
 
-        public Color bilinearSample(double u, double v)
+        Tuple<double,double> Modf(double input)
         {
-            if (u == 1)
-                u -= Util.EPS;
-            if (v == 1)
-                v -= Util.EPS;
-            double w = (double)this.Width - 1;
-            double h = (double)this.Height - 1;
-            int X, Y, x0, y0, x1, y1;
-            double x, y;
-            X = (int)(u * w);
-            Y = (int)(v * h);
-            x = Util.Fract(u * w);
-            y = Util.Fract(v * h);
-            x0 = (int)(X);
-            y0 = (int)(Y);
-            x1 = x0 + 1;
-            y1 = y0 + 1;
-            Color c00 = this.Data[y0 * this.Width + x0];
-            Color c01 = this.Data[y1 * this.Width + x0];
-            Color c10 = this.Data[y0 * this.Width + x1];
-            Color c11 = this.Data[y1 * this.Width + x1];
-            Color c = Color.Black;
-            c = c.Add(c00.MulScalar((1 - x) * (1 - y)));
-            c = c.Add(c10.MulScalar(x * (1 - y)));
-            c = c.Add(c01.MulScalar((1 - x) * y));
-            c = c.Add(c11.MulScalar(x * y));
-            return c;
+            double integral;
+            double fractional;
+            if (input < 1)
+            {
+                if (input < 0)
+                {
+                    integral = Math.Truncate(input);
+                    fractional = input - integral;
+                    return new Tuple<double, double>(-integral, -fractional);
+                }
+                if (input == 0)
+                {
+                    return new Tuple<double, double>(-0, -0);
+                }
+                return new Tuple<double, double>(0, input);
+            }
+            integral = Math.Truncate(input);
+            fractional = input - integral;
+            return new Tuple<double, double>(integral,fractional);
         }
 
-        public Color Sample(double u, double v)
-        {
-            u = Util.Fract(Util.Fract(u) + 1);
-            v = Util.Fract(Util.Fract(v) + 1);
-            return this.bilinearSample(u, 1 - v);
+        internal Color bilinearSample(double u, double v)
+        {   
+             if (u == 1)
+                 u -= Util.EPS;
+             if (v == 1)
+                 v -= Util.EPS;
+             var w = (double)Width - 1;
+             var h = (double)Height - 1;
+
+             double X, Y;
+             double x, y;
+
+             (X, x) = (Modf(u * w).Item1, Modf(u * w).Item2);
+             (Y, y) = (Modf(v * h).Item1, Modf(v * h).Item2);
+
+             var x0 = (int)X;
+             var y0 = (int)Y;
+             var x1 = x0 + 1;
+             var y1 = y0 + 1;
+
+             Color c = Color.Black;
+             Color c00 = Data[y0 * this.Width + x0];
+             Color c01 = Data[y1 * this.Width + x0];
+             Color c10 = Data[y0 * this.Width + x1];
+             Color c11 = Data[y1 * this.Width + x1];
+             c = c.Add(c00.MulScalar((1 - x) * (1 - y)));
+             c = c.Add(c10.MulScalar(x * (1 - y)));
+             c = c.Add(c01.MulScalar((1 - x) * y));
+             c = c.Add(c11.MulScalar(x * y));
+             return c;
         }
 
-        public Vector NormalSample(double u, double v)
+        double Fract(double x)
         {
-            Color c = Sample(u, v);
+            x = Modf(x).Item2;
+            return x;
+        }
+
+        Color ITexture.Sample(double u, double v)
+        {
+            u = Fract(Fract(u) + 1);
+            v = Fract(Fract(v) + 1);
+            return bilinearSample(u, 1 - v);
+        }
+
+        Vector ITexture.NormalSample(double u, double v)
+        {
+            u = Fract(Fract(u) + 1);
+            v = Fract(Fract(v) + 1);
+            Color c = bilinearSample(u, 1 - v);
             return new Vector(c.R * 2 - 1, c.G * 2 - 1, c.B * 2 - 1).Normalize();
         }
 
-        public Vector BumpSample(double u, double v)
+        Vector ITexture.BumpSample(double u, double v)
         {
-            u = Util.Fract(Util.Fract(u) + 1);
-            v = Util.Fract(Util.Fract(v) + 1);
+            u = Fract(Fract(u) + 1);
+            v = Fract(Fract(v) + 1);
             v = 1 - v;
-            int x = (int)(u * this.Width);
-            int y = (int)(v * this.Height);
+            int x = (int)(u * (double)Width);
+            int y = (int)(v * (double)Height);
             int x1 = Util.ClampInt(x - 1, 0, this.Width - 1);
             int x2 = Util.ClampInt(x + 1, 0, this.Width - 1);
             int y1 = Util.ClampInt(y - 1, 0, this.Height - 1);
             int y2 = Util.ClampInt(y + 1, 0, this.Height - 1);
-            Color cx = this.Data[y * this.Width + x1].Sub(this.Data[y * this.Width + x2]);
-            Color cy = this.Data[y1 * this.Width + x].Sub(this.Data[y2 * this.Width + x]);
+            Color cx = Data[y * Width + x1].Sub(Data[y * Width + x2]);
+            Color cy = Data[y1 * Width + x].Sub(Data[y2 * Width + x]);
             return new Vector(cx.R, cy.R, 0);
         }
     }
