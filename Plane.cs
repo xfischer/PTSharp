@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,17 +6,14 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public class Plane : Shape
+    class Plane : IShape
     {
         Vector Point;
         Vector Normal;
         Material Material;
         Box box;
 
-        Plane()
-        {
-
-        }
+        Plane() { }
 
         Plane(Vector point, Vector normal, Material mat)
         {
@@ -26,17 +23,17 @@ namespace PTSharp
             this.box = new Box(new Vector(-Util.INF, -Util.INF, -Util.INF), new Vector(Util.INF, Util.INF, Util.INF));
         }
 
-        public static Plane NewPlane(Vector point, Vector normal, Material material)
+        internal static Plane NewPlane(Vector point, Vector normal, Material material)
         {
             return new Plane(point, normal.Normalize(), material);
         }
 
-        public Box BoundingBox()
+        Box IShape.GetBoundingBox()
         {
             return new Box(new Vector(-Util.INF, -Util.INF, -Util.INF), new Vector(Util.INF, Util.INF, Util.INF));
         }
-    
-        public Hit Intersect(Ray ray)
+
+        Hit IShape.Intersect(Ray ray)
         {
             double d = this.Normal.Dot(ray.Direction);
             if (Math.Abs(d) < Util.EPS)
@@ -52,24 +49,21 @@ namespace PTSharp
             return new Hit(this, t, null);
         }
         
-        public Vector NormalAt(Vector a)
+        Vector IShape.NormalAt(Vector a)
         {
             return this.Normal;
         }
 
-        public Vector UV(Vector a)
+        Vector IShape.UV(Vector a)
         {
             return new Vector();
         }
-        
-        public Material MaterialAt(Vector a)
+
+        void IShape.Compile() { }
+
+        public Material MaterialAt(Vector v)
         {
             return this.Material;
-        }
-        
-        public void Compile()
-        {
-
         }
     }
 }
