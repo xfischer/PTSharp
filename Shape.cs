@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,86 +6,80 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public interface Shape
+    public class TransformedShape : IShape
     {
-        void Compile();
-        Box BoundingBox();
-        Hit Intersect(Ray ray);
-        Vector UV(Vector uv);
-        Vector NormalAt(Vector normal);
-        Material MaterialAt(Vector v);
-    }
+        private IShape Shape;
+        private Matrix matrix;
+        private Matrix inverse;
 
-    public class TransformedShape : Shape
-    {
-        public Shape Shape;
-        public Matrix Matrix;
-        public Matrix Inverse;
+        TransformedShape() { }
 
-        public TransformedShape() { }
-
-        public TransformedShape(Shape s, Matrix m, Matrix im) {
-            this.Shape = s;
-            this.Matrix = m;
-            this.Inverse = im;
+        TransformedShape(IShape s, Matrix m, Matrix im)
+        {
+            Shape = s;
+            Matrix = m;
+            Inverse = im;
+        }
+        TransformedShape(IShape s, Matrix m)
+        {
+            Shape = s;
+            Matrix = m;
+            Inverse = m.Inverse();
         }
 
-        public TransformedShape(Shape s, Matrix m) {
-            this.Shape = s;
-            this.Matrix = m;
-            this.Inverse = m.Inverse();
-        }
-        
-        public void Compile() {
+        void IShape.Compile() { }
 
-        }
-        
-        public static Shape NewTransformedShape(Shape s, Matrix m) {
+        internal static IShape NewTransformedShape(IShape s, Matrix m)
+        {
             return new TransformedShape(s, m, m.Inverse());
         }
-        
-        public Box BoundingBox() {
-            return this.Matrix.MulBox(this.Shape.BoundingBox());
+
+        Box IShape.GetBoundingBox()
+        {
+            return Matrix.MulBox(Shape.GetBoundingBox());
         }
 
-        public Hit Intersect(Ray r)
+        internal Matrix Matrix { get => matrix; set => matrix = value; }
+        internal Matrix Inverse { get => inverse; set => inverse = value; }
+
+        Hit IShape.Intersect(Ray r)
         {
-            Ray shapeRay = this.Inverse.MulRay(r);
+            Ray shapeRay = Inverse.MulRay(r);
             Hit hit = this.Shape.Intersect(shapeRay);
             if (!hit.Ok())
             {
                 return hit;
             }
-            Shape shape = hit.Shape;
-            Vector shapePosition = shapeRay.Position(hit.T);
-            Vector shapeNormal = Shape.NormalAt(shapePosition);
-            Vector position = this.Matrix.MulPosition(shapePosition);
-            Vector normal = this.Inverse.Transpose().MulDirection(shapeNormal);
-            Material material = Material.MaterialAt(this, shapePosition);
+            var shape = hit.Shape;
+            var shapePosition = shapeRay.Position(hit.T);
+            var shapeNormal = shape.NormalAt(shapePosition);
+            var position = this.Matrix.MulPosition(shapePosition);
+            var normal = this.Inverse.Transpose().MulDirection(shapeNormal);
+            var material = Material.MaterialAt(shape, shapePosition);
             bool inside = false;
             if (shapeNormal.Dot(shapeRay.Direction) > 0)
-            {
+            { 
                 normal = normal.Negate();
                 inside = true;
             }
-            Ray ray = new Ray(position, normal);
-            HitInfo info = new HitInfo(shape, position, normal, ray, material, inside);
+            var ray = new Ray(position, normal);
+            var info = new HitInfo(hit.Shape, position, normal, ray, material, inside);
             hit.T = position.Sub(r.Origin).Length();
             hit.HInfo = info;
             return hit;
         }
 
-        public Vector UV(Vector uv)
+        Vector IShape.UV(Vector uv)
         {
             return Shape.UV(uv);
         }
 
-        public Vector NormalAt(Vector normal)
+        Vector IShape.NormalAt(Vector normal)
         {
             return Shape.NormalAt(normal);
         }
 
-        public Material MaterialAt(Vector v)
+        Material IShape.MaterialAt(Vector v)
         {
             return Shape.MaterialAt(v);
         }
