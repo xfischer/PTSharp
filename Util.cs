@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -12,17 +12,8 @@ namespace PTSharp
     {
         public static double INF = 1e9;
         public static double EPS = 1e-9;
-
-        public static double Radians(double degrees)
-        {
-            return degrees * Math.PI / 180;
-        }
-
-        public static double Degrees(double radians)
-        {
-            return radians * 180 / Math.PI;
-        }
-
+        public static double Radians(double degrees) => degrees * Math.PI / 180;
+        public static double Degrees(double radians) => radians * 180 / Math.PI;
         public static Vector Cone(Vector direction, double theta, double u, double v, Random rand)
         {
             double m1, m2, a;
@@ -34,30 +25,28 @@ namespace PTSharp
             {
                 return direction;
             }
-            else
-            {
-                theta = theta * (1 - (2 * Math.Cos(u) / Math.PI));
-                m1 = Math.Sin(theta);
-                m2 = Math.Cos(theta);
-                a = v * 2 * Math.PI;
-                q = Vector.RandomUnitVector(rand);
-                s = direction.Cross(q);
-                t = direction.Cross(s);
-                d = new Vector();
-                d = d.Add(s.MulScalar(m1 * Math.Cos(a)));
-                d = d.Add(t.MulScalar(m1 * Math.Sin(a)));
-                d = d.Add(direction.MulScalar(m2));
-                d = d.Normalize();
-                return d;
-            }
-
+           
+            theta = theta * (1 - (2 * Math.Cos(u) / Math.PI));
+            m1 = Math.Sin(theta);
+            m2 = Math.Cos(theta);
+            a = v * 2 * Math.PI;
+            q = Vector.RandomUnitVector(rand);
+            s = direction.Cross(q);
+            t = direction.Cross(s);
+            d = new Vector();
+            d = d.Add(s.MulScalar(m1 * Math.Cos(a)));
+            d = d.Add(t.MulScalar(m1 * Math.Sin(a)));
+            d = d.Add(direction.MulScalar(m2));
+            d = d.Normalize();
+            
+            return d;
         }
         
         public static Bitmap LoadImage(String path)
         {
             try
             {
-                Bitmap image1 = (Bitmap)Image.FromFile(@path, true);
+                Bitmap image1 = new Bitmap(path); 
                 return image1;
             }
             catch (System.IO.FileNotFoundException)
@@ -84,64 +73,48 @@ namespace PTSharp
                 
         public static double Median(double[] items)
         {
-            int n = items.Length;
-
-            if(items == null)
+            switch(items.Length)
             {
-                throw new ArgumentNullException("items");
+                case 0:
+                    return 0;
+                case var d when items.Length % 2 == 1:
+                    return items[items.Length / 2];
+                default:
+                    var a = items[items.Length / 2 - 1];
+                    var b = items[items.Length / 2];
+                    return (a + b) / 2;
             }
-
-            if (n == 0)
-            {
-                //return 0;
-                throw new InvalidOperationException();
-            }
-
-            if (n % 2 == 0)
-            {
-                double a = items[n / 2 - 1];
-                double b = items[n / 2];
-                return (a + b) / 2.0;
-            }
-
-            if (n % 2 == 1)
-            {
-                return items[n / 2];
-            }
-                        
-            return items[items.Length / 2];
         }
-        
+
+        Tuple<int, double> Modf(double input)
+        {
+            var dec = (int)Math.Truncate(input);
+            var frac = input - Math.Truncate(input);
+            return new Tuple<int, double>(dec, frac);
+        }
+
         public static double Fract(double x)
         {
             double ret = x - Math.Truncate(x);
-            return ret;
+            return x;
         }
 
 
         public static double Clamp(double x, double lo, double hi)
         {
             if (x < lo)
-            {
                 return lo;
-            }
             if (x > hi)
-            {
                 return hi;
-            }
             return x;
         }
         
         public static int ClampInt(int x, int lo, int hi)
         {
             if (x < lo)
-            {
                 return lo;
-            }
             if (x > hi)
-            {
                 return hi;
-            }
             return x;
         }
 
