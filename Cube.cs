@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,101 +6,87 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    class Cube : Shape
+    class Cube : IShape
     {
-        Vector Min;
-        Vector Max;
-        Material CubeMaterial;
-        Box Box;
+        internal Vector Min;
+        internal Vector Max;
+        private Material CubeMaterial;
+        Box CubeBox;
 
         Cube(Vector min, Vector max, Material material, Box box)
         {
-            this.Min = min;
-            this.Max = max;
-            this.CubeMaterial = material;
-            this.Box = box;
+            Min = min;
+            Max = max;
+            CubeMaterial = material;
+            CubeBox = box;
         }
 
-        public static Cube NewCube(Vector min, Vector max, Material material)
+        internal static Cube NewCube(Vector min, Vector max, Material material)
         {
             Box box = new Box(min, max);
             return new Cube(min, max, material, box);
         }
 
-        public void Compile()
-        {
+        public void Compile() { }
 
+        Box IShape.GetBoundingBox()
+        {
+            return CubeBox;
         }
 
-        public Box BoundingBox()
+        Hit IShape.Intersect(Ray r)
         {
-            return this.Box;
-        }
+            var n = Min.Sub(r.Origin).Div(r.Direction);
+            var f = Max.Sub(r.Origin).Div(r.Direction);
 
-        public Hit Intersect(Ray r)
-        {
-            Vector n = this.Min.Sub(r.Origin).Div(r.Direction);
-            Vector f = this.Max.Sub(r.Origin).Div(r.Direction);
+            (n,f) = (n.Min(f),n.Max(f));
 
-            n = n.Min(f);
-            f = n.Max(f);
-
-            double t0 = Math.Max(Math.Max(n.X, n.Y), n.Z);
-            double t1 = Math.Min(Math.Min(f.X, f.Y), f.Z);
+            var t0 = Math.Max(Math.Max(n.X, n.Y), n.Z);
+            var t1 = Math.Min(Math.Min(f.X, f.Y), f.Z);
 
             if (t0 > 0 && t0 < t1)
-            {
                 return new Hit(this, t0, null);
-            }
+
             return Hit.NoHit;
         }
-        
-        public Vector UV(Vector p)
+
+        Vector IShape.UV(Vector p)
         {
-            p = p.Sub(this.Min).Div(this.Max.Sub(this.Min));
+            p = p.Sub(Min).Div(Max.Sub(Min));
             return new Vector(p.X, p.Z, 0);
         }
 
-        public Material MaterialAt(Vector p)
+        Material IShape.MaterialAt(Vector p)
         {
-            return this.CubeMaterial;
+            return CubeMaterial;
         }
         
-        public Vector NormalAt(Vector p)
+        Vector IShape.NormalAt(Vector p)
         {
-            if (p.X < this.Min.X + Util.EPS) 
+            switch (p)
             {
-                return new Vector(-1, 0, 0);  
-            }
-            else if (p.X > this.Max.X - Util.EPS) 
-            {
-                return new Vector(1, 0, 0);   
-            }
-            else if (p.Y < this.Min.Y + Util.EPS) 
-            {
-                return new Vector(0, -1, 0);  
-            }
-            else if (p.Y > this.Max.Y - Util.EPS)  
-            {
-                return new Vector(0, 1, 0);   
-            }
-            else if (p.Z < this.Min.Z + Util.EPS)  
-            {
-                return new Vector(0, 0, -1);  
-            }
-            else if (p.Z > this.Max.Z - Util.EPS)  
-            {
-                return new Vector(0, 0, 1);   
+                case Vector d when p.X < Min.X + Util.EPS:
+                    return new Vector(-1, 0, 0);
+                case Vector e when p.X > Max.X - Util.EPS:
+                    return new Vector(1, 0, 0);
+                case Vector d when p.Y < Min.Y + Util.EPS:
+                    return new Vector(0, -1, 0);
+                case Vector d when p.Y > Max.Y - Util.EPS:
+                    return new Vector(0, 1, 0);
+                case Vector d when p.Z < Min.Z + Util.EPS:
+                    return new Vector(0, 0, -1);
+                case Vector d when p.Z > Max.Z - Util.EPS:
+                    return new Vector(0, 0, 1);
             }
             return new Vector(0, 1, 0);
         }
         
-        public Mesh CubeMesh()
+        Mesh CubeMesh()
         {
-            Vector a = this.Min;
-            Vector b = this.Max;
+            Vector a = Min;
+            Vector b = Max;
             Vector z = new Vector();
-            Material m = this.CubeMaterial;
+            Material m = CubeMaterial;
             Vector v000 = new Vector(a.X, a.Y, a.Z);
             Vector v001 = new Vector(a.X, a.Y, b.Z);
             Vector v010 = new Vector(a.X, b.Y, a.Z);
