@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,16 +6,18 @@ using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public interface Sampler {
-
+    public interface Sampler
+    {
         Color Sample(Scene scene, Ray ray, Random rand);
     }
 
-    public enum LightMode {
+    public enum LightMode
+    {
         LightModeRandom, LightModeAll
     }
 
-    public enum SpecularMode  {
+    public enum SpecularMode
+    {
         SpecularModeNaive, SpecularModeFirst, SpecularModeAll
     }
 
@@ -58,36 +60,36 @@ namespace PTSharp
 
             return this.sample(scene, ray, true, this.FirstHitSamples, 0, rand);
         }
-        
+
         Color sample(Scene scene, Ray ray, bool emission, int samples, int depth, Random rand)
         {
-
-            if (depth > this.MaxBounces) {
+            if (depth > MaxBounces)
+            {
                 return Color.Black;
             }
-            Hit hit = scene.Intersect(ray);
+            var hit = scene.Intersect(ray);
             if (!hit.Ok())
             {
-                return this.sampleEnvironment(scene, ray);
+                return sampleEnvironment(scene, ray);
             }
-            HitInfo info = hit.Info(ray);
-            Material material = info.material;
-            Color result = Color.Black;
+            var info = hit.Info(ray);
+            var material = info.material;
+            var result = Color.Black;
             if (material.Emittance > 0)
             {
                 if (DirectLighting && !emission)
-                {
                     return Color.Black;
-                }
                 result = result.Add(material.Color.MulScalar(material.Emittance * (double)samples));
             }
-            int n = (int)Math.Sqrt((double)samples);
+            var n = (int)Math.Sqrt((double)samples);
             BounceType ma, mb;
-            if (SMode == SpecularMode.SpecularModeAll || (depth == 0 && SMode == SpecularMode.SpecularModeFirst)) {
+            if (SMode == SpecularMode.SpecularModeAll || (depth == 0 && SMode == SpecularMode.SpecularModeFirst))
+            {
                 ma = BounceType.BounceTypeDiffuse;
                 mb = BounceType.BounceTypeSpecular;
             }
-            else {
+            else
+            {
                 ma = BounceType.BounceTypeAny;
                 mb = BounceType.BounceTypeAny;
             }
@@ -95,19 +97,30 @@ namespace PTSharp
             {
                 for (int v = 0; v < n; v++)
                 {
-
                     for (BounceType mode = ma; mode <= mb; mode++)
                     {
-                        double fu = u + rand.NextDouble() / n;
-                        double fv = v + rand.NextDouble() / n;
+                        var fu = ((double)u + rand.NextDouble()) / n;
+                        var fv = ((double)v + rand.NextDouble()) / n;
+                        //ray.Bounce(info, fu, fv, mode, rand);
                         Ray newRay = null;
+
                         if (mode == ma)
                             newRay = ray.Bounce(info, fu, fv, mode, rand);
+
                         if (mode == mb)
                             newRay = ray.Bounce(info, fu, fv, mode, rand);
+
                         if (mode == BounceType.BounceTypeAny)
                         {
                             newRay.bouncep = 1;
+                        }
+
+                        if (newRay.bouncep > 0 && newRay.reflected)
+                        {
+                            //specular
+                            var indirect = this.sample(scene, newRay, newRay.reflected, 1, depth + 1, rand);
+                            var tinted = indirect.Mix(material.Color.Mul(indirect), material.Tint);
+                            result = result.Add(tinted.MulScalar(newRay.bouncep));
                         }
 
                         if (newRay.bouncep > 0 && !newRay.reflected)
@@ -121,13 +134,7 @@ namespace PTSharp
                             }
                             result = result.Add(material.Color.Mul(direct.Add(indirect)).MulScalar(newRay.bouncep));
                         }
-                        if (newRay.bouncep > 0 && newRay.reflected)
-                        {
-                            //specular
-                            Color indirect = this.sample(scene, newRay, newRay.reflected, 1, depth + 1, rand);
-                            Color tinted = indirect.Mix(material.Color.Mul(indirect), material.Tint);
-                            result = result.Add(tinted.MulScalar(newRay.bouncep));
-                        }
+                        
                     }
                 }
             }
@@ -140,18 +147,18 @@ namespace PTSharp
             if (scene.Texture != null)
             {
                 Vector d = ray.Direction;
-                double u = Math.Atan2(d.Z, d.X) + scene.TextureAngle;
+                double u = Math.Atan2(d.Z, d.X) + scene.textureAngle;
                 double v = Math.Atan2(d.Y, new Vector(d.X, 0, d.Z).Length());
                 u = (u + Math.PI) / (2 * Math.PI);
                 v = (v + Math.PI / 2) / Math.PI;
                 return scene.Texture.Sample(u, v);
             }
-            return scene.Color;
+            return scene.color;
         }
 
         Color sampleLights(Scene scene, Ray n, Random rand)
         {
-            int nLights = scene.Lights.Length;
+            int nLights = scene.lights.Length;
             if (nLights == 0)
             {
                 return Color.Black;
@@ -159,7 +166,7 @@ namespace PTSharp
             if (LMode == LightMode.LightModeAll)
             {
                 Color result = new Color();
-                foreach (Shape light in scene.Lights)
+                foreach (IShape light in scene.lights)
                 {
                     result = result.Add(this.sampleLight(scene, n, rand, light));
                 }
@@ -167,31 +174,37 @@ namespace PTSharp
             }
             else
             {
-                Shape light = scene.Lights[rand.Next(nLights)];
+                IShape light = scene.lights[rand.Next(nLights)];
                 return this.sampleLight(scene, n, rand, light).MulScalar((double)nLights);
             }
         }
 
-        Color sampleLight(Scene scene, Ray n, Random rand, Shape light)
+        Color sampleLight(Scene scene, Ray n, Random rand, IShape light)
         {
             Vector center;
             double radius;
-            if (light.GetType() == typeof(Sphere)) {
-                radius = ((Sphere)light).Radius;
-                center = ((Sphere)light).Center;
-            } else {
-                Box box = light.BoundingBox();
-                radius = box.OuterRadius();
-                center = box.Center();
+
+            switch (light)
+            {
+                case Sphere sphere:
+                    radius = sphere.Radius;
+                    center = sphere.Center;
+                    break;
+                default:
+                    Box box = light.GetBoundingBox();
+                    radius = box.OuterRadius();
+                    center = box.Center();
+                    break;
             }
+            
             Vector point = center;
-            if (this.SoftShadows)
+            if (SoftShadows)
             {
                 for (; ; )
                 {
-                    double x = rand.NextDouble() * 2 - 1;
-                    double y = rand.NextDouble() * 2 - 1;
-                    if (x * x + y * y <= 1)
+                    var x = (rand.NextDouble() * 2) - 1;
+                    var y = (rand.NextDouble() * 2) - 1;
+                    if ((x * x) + (y * y) <= 1)
                     {
                         Vector l = center.Sub(n.Origin).Normalize();
                         Vector u = l.Cross(Vector.RandomUnitVector(rand)).Normalize();
@@ -204,31 +217,35 @@ namespace PTSharp
                     }
                 }
             }
+
             Ray ray = new Ray(n.Origin, point.Sub(n.Origin).Normalize());
-            double diffuse = ray.Direction.Dot(n.Direction);
+
+            var diffuse = ray.Direction.Dot(n.Direction);
             if (diffuse <= 0)
             {
                 return Color.Black;
             }
+
             Hit hit = scene.Intersect(ray);
             if (!hit.Ok() || hit.Shape != light)
             {
                 return Color.Black;
             }
-            double hyp = center.Sub(n.Origin).Length();
-            double opp = radius;
-            double theta = Math.Asin(opp / hyp);
-            double adj = opp / Math.Tan(theta);
-            double d = Math.Cos(theta) * adj;
-            double r = Math.Sin(theta) * adj;
-            double coverage = (r * r) / (d * d);
+
+            var hyp = center.Sub(n.Origin).Length();
+            var opp = radius;
+            var theta = Math.Asin(opp / hyp);
+            var adj = opp / Math.Tan(theta);
+            var d = Math.Cos(theta) * adj;
+            var r = Math.Sin(theta) * adj;
+            var coverage = (r * r) / (d * d);
             if (hyp < opp)
             {
                 coverage = 1;
             }
             coverage = Math.Min(coverage, 1);
             Material material = Material.MaterialAt(light, point);
-            double m = material.Emittance * diffuse * coverage;
+            var m = material.Emittance * diffuse * coverage;
             return material.Color.MulScalar(m);
         }
     }
