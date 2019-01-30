@@ -1,4 +1,4 @@
-﻿using NativeInteropEx;
+using NativeInteropEx;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -232,11 +232,11 @@ namespace PTSharp
                                 varray = vertexes.ToArray();
                                 for (int i = 0; i < varray.Length; i += 3)
                                 {
-                                    Triangle t = new Triangle();
-                                    t.TriangleMaterial = material;
-                                    t.V1 = varray[i + 0];
-                                    t.V2 = varray[i + 1];
-                                    t.V3 = varray[i + 2];
+                                    Triangle t = new Triangle(varray[i + 0], varray[i + 1], varray[i + 2], material);
+                                    //t.TriangleMaterial = material;
+                                    //t.V1 = varray[i + 0];
+                                    //t.V2 = varray[i + 1];
+                                    //t.V3 = varray[i + 2];
                                     t.FixNormals();
                                     triangles.Add(t);
                                 }
@@ -272,11 +272,11 @@ namespace PTSharp
 
             foreach (STLTriangle m in mesh)
             {
-                Triangle t = new Triangle();
-                t.TriangleMaterial = material;
-                t.V1 = new Vector(m.A.X, m.A.Y, m.A.Z);
-                t.V2 = new Vector(m.B.X, m.B.Y, m.B.Z);
-                t.V3 = new Vector(m.C.X, m.C.Y, m.C.Z);
+                Triangle t = new Triangle(new Vector(m.A.X, m.A.Y, m.A.Z), new Vector(m.B.X, m.B.Y, m.B.Z), new Vector(m.C.X, m.C.Y, m.C.Z), material);
+                //t.TriangleMaterial = material;
+                //t.V1 = new Vector(m.A.X, m.A.Y, m.A.Z);
+                //t.V2 = new Vector(m.B.X, m.B.Y, m.B.Z);
+                //t.V3 = new Vector(m.C.X, m.C.Y, m.C.Z);
                 t.FixNormals();
                 tlist.Add(t);
             }
@@ -284,5 +284,3 @@ namespace PTSharp
         }
     }
 }
-
-
