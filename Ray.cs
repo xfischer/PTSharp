@@ -1,86 +1,65 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PTSharp
 {
     public class Ray
     {
-        public Vector Origin, Direction;
-        public Boolean reflected;
+        internal Vector Origin, Direction;
+        internal Boolean reflected;
         public double bouncep;
 
-        public Ray(Vector Origin, Vector Direction)
+        internal Ray(Vector Origin_, Vector Direction_)
         {
-            this.Origin = Origin;
-            this.Direction = Direction;
+            Origin = Origin_;
+            Direction = Direction_;
         }
 
-        public Ray(Vector Origin, Vector Direction, Boolean reflected, double p)
+        internal Ray(Vector Origin_, Vector Direction_, Boolean reflected_, double p)
         {
-            this.Origin = Origin;
-            this.Direction = Direction;
-            this.reflected = reflected;
-            this.bouncep = p;
+            Origin = Origin_;
+            Direction = Direction_;
+            reflected = reflected_;
+            bouncep = p;
         }
 
-        public Vector Position(double t)
-        {
-            return this.Origin.Add(this.Direction.MulScalar(t));
+        internal Vector Position(double t) => Origin.Add(Direction.MulScalar(t));
 
-        }
-        
-        public Ray Reflect(Ray i)
-        {
-            return new Ray(this.Origin, this.Direction.Reflect(i.Direction));
-        }
-        
-        public Ray Refract(Ray i, double n1, double n2)
-        {
-            return new Ray(this.Origin, this.Direction.Refract(i.Direction, n1, n2));
-        }
-        
-        public double Reflectance(Ray i, double n1, double n2)
-        {
-            return this.Direction.Reflectance(i.Direction, n1, n2);
-        }
-        
+        internal Ray Reflect(Ray i) => new Ray(Origin, Direction.Reflect(i.Direction));
+
+        public Ray Refract(Ray i, double n1, double n2) => new Ray(Origin, Direction.Refract(i.Direction, n1, n2));
+
+        public double Reflectance(Ray i, double n1, double n2) => Direction.Reflectance(i.Direction, n1, n2);
+
         public Ray WeightedBounce(double u, double v, Random rand)
         {
-            double radius = Math.Sqrt(u);
-            double theta = 2 * Math.PI * v;
-
-            Vector s = this.Direction.Cross(Vector.RandomUnitVector(rand)).Normalize();
-            Vector t = this.Direction.Cross(s);
+            var radius = Math.Sqrt(u);
+            var theta = 2 * Math.PI * v;
+            Vector s = Direction.Cross(Vector.RandomUnitVector(rand)).Normalize();
+            Vector t = Direction.Cross(s);
             Vector d = new Vector();
-
             d = d.Add(s.MulScalar(radius * Math.Cos(theta)));
             d = d.Add(t.MulScalar(radius * Math.Sin(theta)));
-            d = d.Add(this.Direction.MulScalar(Math.Sqrt(1 - u)));
+            d = d.Add(Direction.MulScalar(Math.Sqrt(1 - u)));
+            return new Ray(Origin, d);
+        }
 
-            return new Ray(this.Origin, d);
-        }
-        
-        public Ray ConeBounce(double theta, double u, double v, Random rand)
-        {
-            return new Ray(this.Origin, Util.Cone(this.Direction, theta, u, v, rand));
-        }
+        public Ray ConeBounce(double theta, double u, double v, Random rand) => new Ray(Origin, Util.Cone(Direction, theta, u, v, rand));
 
         public Ray Bounce(HitInfo info, double u, double v, BounceType bounceType, Random rand)
         {
             Ray n = info.Ray;
-            Material material = info.material;
-            double n1 = 1.0;
-            double n2 = material.Index;
-            double temp;
+            var material = info.material;
+            var n1 = 1.0;
+            var n2 = material.Index;
 
             if (info.inside)
             {
-                temp = n1;
-                n1 = n2;
-                n2 = temp;
+                (n1, n2) = (n2, n1);
             }
 
             double p;
@@ -95,6 +74,7 @@ namespace PTSharp
             }
 
             bool reflect = false;
+
             switch (bounceType)
             {
                 case BounceType.BounceTypeAny:
@@ -127,7 +107,7 @@ namespace PTSharp
             }
             else
             {
-                Ray wBounce = this.WeightedBounce(u, v, rand);
+                Ray wBounce = WeightedBounce(u, v, rand);
                 wBounce.reflected = false;
                 wBounce.bouncep = 1 - p;
                 return wBounce;
