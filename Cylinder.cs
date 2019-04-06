@@ -38,10 +38,10 @@ namespace PTSharp
                 m = new Matrix().Rotate(u, a).Translate(v0);
             }
             var c = NewCylinder(radius, 0, z, material);
-            return TransformedShape.NewTransformedShape(c, m);
+            return (IShape)TransformedShape.NewTransformedShape(c, m);
         }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
             double r = Radius;
             return new Box(new Vector(-r, -r, Z0), new Vector(r, r, Z1));
