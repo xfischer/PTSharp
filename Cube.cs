@@ -10,15 +10,15 @@ namespace PTSharp
     {
         internal Vector Min;
         internal Vector Max;
-        private Material CubeMaterial;
-        Box CubeBox;
+        internal Material Material;
+        internal Box Box;
 
         Cube(Vector min, Vector max, Material material, Box box)
         {
             Min = min;
             Max = max;
-            CubeMaterial = material;
-            CubeBox = box;
+            Material = material;
+            Box = box;
         }
 
         internal static Cube NewCube(Vector min, Vector max, Material material)
@@ -27,11 +27,11 @@ namespace PTSharp
             return new Cube(min, max, material, box);
         }
 
-        public void Compile() { }
+        void IShape.Compile() { }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
-            return CubeBox;
+            return Box;
         }
 
         Hit IShape.Intersect(Ray r)
@@ -58,7 +58,7 @@ namespace PTSharp
 
         Material IShape.MaterialAt(Vector p)
         {
-            return CubeMaterial;
+            return Material;
         }
         
         Vector IShape.NormalAt(Vector p)
@@ -86,7 +86,7 @@ namespace PTSharp
             Vector a = Min;
             Vector b = Max;
             Vector z = new Vector();
-            Material m = CubeMaterial;
+            Material m = Material;
             Vector v000 = new Vector(a.X, a.Y, a.Z);
             Vector v001 = new Vector(a.X, a.Y, b.Z);
             Vector v010 = new Vector(a.X, b.Y, a.Z);
@@ -95,7 +95,6 @@ namespace PTSharp
             Vector v101 = new Vector(b.X, a.Y, b.Z);
             Vector v110 = new Vector(b.X, b.Y, a.Z);
             Vector v111 = new Vector(b.X, b.Y, b.Z);
-
             Triangle[] triangles = {
                 Triangle.NewTriangle(v000, v100, v110, z, z, z, m),
                 Triangle.NewTriangle(v000, v110, v010, z, z, z, m),
