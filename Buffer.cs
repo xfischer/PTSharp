@@ -131,12 +131,7 @@ namespace PTSharp
             public Color M;
             public Color V;
 
-            public Pixel()
-            {
-                Samples = 0;
-                M = new Color(0, 0, 0);
-                V = new Color(0, 0, 0);
-            }
+            public Pixel() { }
 
             public Pixel(int Samples, Color M, Color V)
             {
@@ -156,22 +151,22 @@ namespace PTSharp
                 }
 
                 Color m = this.M;
-                this.M = this.M.Add(sample.Sub(this.M).DivScalar((double)this.Samples));
-                this.V = this.V.Add(sample.Sub(m).Mul(sample.Sub(this.M)));
+                M = M.Add(sample.Sub(M).DivScalar(Samples));
+                V = V.Add(sample.Sub(m).Mul(sample.Sub(M)));
             }
 
             public Color Color()
             {
-                return this.M;
+                return M;
             }
 
             public Color Variance()
             {
-                if (this.Samples < 2)
+                if (Samples < 2)
                 {
                     return new Color(0, 0, 0);
                 }
-                return this.V.DivScalar((double)(this.Samples - 1));
+                return V.DivScalar(Samples - 1);
             }
 
             public Color StandardDeviation()
