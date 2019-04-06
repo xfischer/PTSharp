@@ -1,13 +1,12 @@
 ﻿namespace PTSharp
 {
-    interface IShape
+    internal interface IShape
     {
         void Compile();
-        Box GetBoundingBox();
+        Box BoundingBox();
         Hit Intersect(Ray ray);
         Vector UV(Vector uv);
         Vector NormalAt(Vector normal);
         Material MaterialAt(Vector v);
-        //Box BoundingBox();
     }
 }
