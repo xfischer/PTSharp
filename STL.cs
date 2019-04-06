@@ -22,15 +22,15 @@ namespace PTSharp
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct STLVector
         {
-            public readonly float X;
-            public readonly float Y;
-            public readonly float Z;
+            public float X;
+            public float Y;
+            public float Z;
 
             public STLVector(float x, float y, float z)
             {
-                this.X = x;
-                this.Y = y;
-                this.Z = z;
+                X = x;
+                Y = y;
+                Z = z;
             }
         }
 
@@ -38,11 +38,11 @@ namespace PTSharp
         struct STLTriangle
         {
             // 4 * 3 * 4 byte + 2 byte = 50 byte
-            public readonly STLVector Normal;
-            public readonly STLVector A;
-            public readonly STLVector B;
-            public readonly STLVector C;
-            public readonly ushort AttributeByteCount;
+            public  STLVector Normal;
+            public  STLVector A;
+            public  STLVector B;
+            public  STLVector C;
+            public  ushort AttributeByteCount;
 
             public STLTriangle(
                 STLVector normalVec,
@@ -89,6 +89,7 @@ namespace PTSharp
 
             if (File.Exists(filePath))
             {
+                Console.WriteLine("Loading STL:" + filePath);
                 size = fi.Length;
                 bool isReadOnly = fi.IsReadOnly;
                 
@@ -99,13 +100,12 @@ namespace PTSharp
                     int filelength = (int)reader.BaseStream.Length;
                     string code = reader.ReadByte().ToString() + reader.ReadByte().ToString();
                     reader.BaseStream.Close();
-
-                    Console.WriteLine("Code = " + code);
-                    if (code.Equals("00"))
+                    //Console.WriteLine("Code = " + code);
+                    if (code.Equals("00") || code.Equals("10181") || code.Equals("8689") || code.Equals("19593"))
                     {
-                        return STL.LoadSTLB(filePath, material);
+                        return LoadSTLB(filePath, material);
                     } else {
-                        return STL.LoadSTLA(filePath, material);
+                        return LoadSTLA(filePath, material);
                     }
                 }
             }
@@ -127,7 +127,6 @@ namespace PTSharp
             List<Triangle> triangles = new List<Triangle>();
             Vector[] varray;
             Match match = null;
-
             const string regex = @"\s*(facet normal|vertex)\s+(?<X>[^\s]+)\s+(?<Y>[^\s]+)\s+(?<Z>[^\s]+)";
             const NumberStyles numberStyle = (NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign);
             StreamReader file = new StreamReader(filename);
@@ -140,20 +139,17 @@ namespace PTSharp
                 {
                     counter++;
                     //While there are lines to be read in the file
-                    while ((line = file.ReadLine()) != null)
+                    while ((line = file.ReadLine()) != null && !line.Contains("endsolid"))
                     {
                         counter++;
-                        if (line.Contains("facet normal"))
+                        if (line.Contains("normal"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
                             //Reading facet
-                            Console.WriteLine("Read facet on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
-
                             Vector f = new Vector(x, y, z);
-                            Console.WriteLine("Added facet (x,y,z)"+ " "+x+" "+y+" "+z);
                             facetnormal.Add(f);
                         }
 
@@ -163,21 +159,17 @@ namespace PTSharp
                         // Checking if we are in the outer loop line
                         if (line.Contains("outer loop"))
                         {
-                            //Console.WriteLine("Outer loop");
-                            line = file.ReadLine();
+                             line = file.ReadLine();
                             counter++;
                         }
 
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
-                            Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
-
                             Vector v = new Vector(x, y, z);
-                            Console.WriteLine("Added vertex 1 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                         }
 
@@ -187,13 +179,10 @@ namespace PTSharp
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
-                            Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
-
                             Vector v = new Vector(x, y, z);
-                            Console.WriteLine("Added vertex 2 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                             line = file.ReadLine();
                             counter++;
@@ -202,13 +191,10 @@ namespace PTSharp
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
-                            Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
-
                             Vector v = new Vector(x, y, z);
-                            Console.WriteLine("Added vertex 3 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                             line = file.ReadLine();
                             counter++;
@@ -216,14 +202,12 @@ namespace PTSharp
                         
                         if (line.Contains("endloop"))
                         {
-                            Console.WriteLine("End loop");
                             line = file.ReadLine();
                             counter++;
                         }
                         
                         if (line.Contains("endfacet"))
                         {
-                            Console.WriteLine("End facet");
                             line = file.ReadLine();
                             counter++;
 
@@ -233,10 +217,6 @@ namespace PTSharp
                                 for (int i = 0; i < varray.Length; i += 3)
                                 {
                                     Triangle t = new Triangle(varray[i + 0], varray[i + 1], varray[i + 2], material);
-                                    //t.TriangleMaterial = material;
-                                    //t.V1 = varray[i + 0];
-                                    //t.V2 = varray[i + 1];
-                                    //t.V3 = varray[i + 2];
                                     t.FixNormals();
                                     triangles.Add(t);
                                 }
@@ -253,7 +233,7 @@ namespace PTSharp
                 return null;
             }
             file.Close();
-            return Mesh.NewMesh(triangles.ToArray(), material);
+            return Mesh.NewMesh(triangles.ToArray());
         }
 
        public static Mesh LoadSTLB(String filename, Material material)
@@ -273,14 +253,10 @@ namespace PTSharp
             foreach (STLTriangle m in mesh)
             {
                 Triangle t = new Triangle(new Vector(m.A.X, m.A.Y, m.A.Z), new Vector(m.B.X, m.B.Y, m.B.Z), new Vector(m.C.X, m.C.Y, m.C.Z), material);
-                //t.TriangleMaterial = material;
-                //t.V1 = new Vector(m.A.X, m.A.Y, m.A.Z);
-                //t.V2 = new Vector(m.B.X, m.B.Y, m.B.Z);
-                //t.V3 = new Vector(m.C.X, m.C.Y, m.C.Z);
                 t.FixNormals();
                 tlist.Add(t);
             }
-            return Mesh.NewMesh(tlist.ToArray(), material);
+            return Mesh.NewMesh(tlist.ToArray());
         }
     }
 }
