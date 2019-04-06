@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,21 +10,23 @@ namespace PTSharp
     struct Vector
     {
         public static Vector ORIGIN = new Vector(0, 0, 0);
-        public double X, Y, Z;
+        public double X, Y, Z;//, W;
+        public int Index { get; set; }
 
         public Vector(double x, double y, double z)
         {
             X = x;
             Y = y;
             Z = z;
+            Index = 0;
         }
-        public static Vector RandomUnitVector(Random rnd)
+        public static Vector RandomUnitVector(Random rand)
         {
             for (;;)
             {
                 double x, y, z;
 
-                if (rnd.Equals(null))
+                if (rand.Equals(null))
                 {
                     x = new Random().NextDouble() * 2 - 1;
                     y = new Random().NextDouble() * 2 - 1;
@@ -31,9 +34,9 @@ namespace PTSharp
                 }
                 else
                 {
-                    x = rnd.NextDouble() * 2 - 1;
-                    y = rnd.NextDouble() * 2 - 1;
-                    z = rnd.NextDouble() * 2 - 1;
+                    x = rand.NextDouble() * 2 - 1;
+                    y = rand.NextDouble() * 2 - 1;
+                    z = rand.NextDouble() * 2 - 1;
                 }
                 if (x * x + y * y + z * z > 1)
                 {
@@ -103,7 +106,10 @@ namespace PTSharp
 
         public Vector DivScalar(double b) => new Vector(X / b, Y / b, Z / b);
 
-        public Vector Min(Vector b) => new Vector(Math.Min(X, b.X), Math.Min(Y, b.Y), Math.Min(Z, b.Z));
+        public Vector Min(Vector b)
+        {
+            return new Vector(Math.Min(X, b.X), Math.Min(Y, b.Y), Math.Min(Z, b.Z));
+        }
 
         public Vector Max(Vector b) => new Vector(Math.Max(X, b.X), Math.Max(Y, b.Y), Math.Max(Z, b.Z));
 
@@ -132,30 +138,33 @@ namespace PTSharp
 
         public Vector Refract(Vector i, double n1, double n2)
         {
-            double nr = n1 / n2;
-            double cosI = -Dot(i);
-            double sinT2 = nr * nr * (1 - cosI * cosI);
-            if (sinT2 > 1)
+            var nr = n1 / n2;
+            var cosI = -Dot(i);
+            var sinT2 = nr * nr * (1 - cosI * cosI);
+
+            if(sinT2 > 1)
             {
                 return new Vector();
             }
-            double cosT = Math.Sqrt(1 - sinT2);
+            var cosT = Math.Sqrt(1 - sinT2);
+
             return i.MulScalar(nr).Add(MulScalar(nr * cosI - cosT));
         }
 
         public double Reflectance(Vector i, double n1, double n2)
         {
-            double nr = n1 / n2;
-            double cosI = -this.Dot(i);
-            double sinT2 = nr * nr * (1 - cosI * cosI);
-            if (sinT2 > 1)
+            var nr = n1 / n2;
+            var cosI = -Dot(i);
+            var sinT2 = nr * nr * (1 - cosI * cosI);
+
+            if(sinT2 > 1)
             {
                 return 1;
             }
-            double cosT = Math.Sqrt(1 - sinT2);
-            double rOrth = ((n1 * cosI) - (n2 * cosT)) / ((n1 * cosI) + (n2 * cosT));
-            var rPar = ((n2 * cosI) - (n1 * cosT)) / ((n2 * cosI) + (n1 * cosT));
-            return ((rOrth * rOrth) + (rPar * rPar)) / 2;
+            var cosT = Math.Sqrt(1 - sinT2);
+            var rOrth = (n1 * cosI - n2 * cosT) / (n1 * cosI + n2 * cosT);
+            var rPar = (n2 * cosI - n1 * cosT) / (n2 * cosI + n1 * cosT);
+            return (rOrth * rOrth + rPar * rPar) / 2;
         }
     };
 }
