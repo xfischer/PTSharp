@@ -38,14 +38,12 @@ namespace PTSharp
             x33 = x33_;
         }
 
-        public Matrix Identity()
-        {
-            return new Matrix(1, 0, 0, 0,
-                              0, 1, 0, 0,
-                              0, 0, 1, 0,
-                              0, 0, 0, 1);
-        }
-        public Matrix Translate(Vector v)
+        internal static Matrix Identity = new Matrix(1, 0, 0, 0, 
+                                                     0, 1, 0, 0, 
+                                                     0, 0, 1, 0, 
+                                                     0, 0, 0, 1);
+        
+        internal Matrix Translate(Vector v)
         {
             return new Matrix(1, 0, 0, v.X,
                               0, 1, 0, v.Y,
@@ -53,7 +51,7 @@ namespace PTSharp
                               0, 0, 0, 1);
         }
 
-        public Matrix Scale(Vector v)
+        internal Matrix Scale(Vector v)
         {
             return new Matrix(v.X, 0, 0, 0,
                               0, v.Y, 0, 0,
@@ -61,20 +59,19 @@ namespace PTSharp
                               0, 0, 0, 1);
         }
 
-        public Matrix Rotate(Vector v, double a)
+        internal Matrix Rotate(Vector v, double a)
         {
             v = v.Normalize();
             var s = Math.Sin(a);
             var c = Math.Cos(a);
             var m = 1 - c;
-
             return new Matrix(m * v.X * v.X + c, m * v.X * v.Y + v.Z * s, m * v.Z * v.X - v.Y * s, 0,
                               m * v.X * v.Y - v.Z * s, m * v.Y * v.Y + c, m * v.Y * v.Z + v.X * s, 0,
                               m * v.Z * v.X + v.Y * s, m * v.Y * v.Z - v.X * s, m * v.Z * v.Z + c, 0,
                               0, 0, 0, 1);
-            
         }
-        public Matrix Frustum(double l, double r, double b, double t, double n, double f)
+        
+        internal Matrix Frustum(double l, double r, double b, double t, double n, double f)
         {
             double t1 = 2 * n;
             double t2 = r - l;
@@ -86,7 +83,8 @@ namespace PTSharp
                               0, 0, (-f - n) / t4, (-t1 * f) / t4,
                               0, 0, -1, 0);
         }
-        public Matrix Orthographic(double l, double r, double b, double t, double n, double f)
+        
+        internal Matrix Orthographic(double l, double r, double b, double t, double n, double f)
         {
             return new Matrix(2 / (r - l), 0, 0, -(r + l) / (r - l),
                               0, 2 / (t - b), 0, -(t + b) / (t - b),
@@ -94,19 +92,20 @@ namespace PTSharp
                               0, 0, 0, 1);
         }
 
-        public Matrix Perspective(double fovy, double aspect, double near, double far)
+        internal Matrix Perspective(double fovy, double aspect, double near, double far)
         {
             double ymax = near * Math.Tan(fovy * Math.PI / 360);
             double xmax = ymax * aspect;
             return Frustum(-xmax, xmax, -ymax, ymax, near, far);
         }
         
-        public static Matrix LookAtMatrix(Vector eye, Vector center, Vector up)
+        internal Matrix LookAtMatrix(Vector eye, Vector center, Vector up)
         {
             up = up.Normalize();
             var f = center.Sub(eye).Normalize();
             var s = f.Cross(up).Normalize();
             var u = s.Cross(f);
+
             var m = new Matrix(s.X, u.X, f.X, 0,
                                s.Y, u.Y, f.Y, 0,
                                s.Z, u.Z, f.Z, 0,
@@ -115,9 +114,9 @@ namespace PTSharp
             return m.Transpose().Inverse().Translate(m, eye);
         }
 
-        public Matrix Translate(Matrix m, Vector v)
+        internal Matrix Translate(Matrix m, Vector v)
         {
-            return Translate(v).Mul(m);
+            return new Matrix().Translate(v).Mul(m);
         }
 
         public Matrix Scale(Matrix m, Vector v)
@@ -154,18 +153,18 @@ namespace PTSharp
                
         public Vector MulPosition(Vector b)
         {
-            double x = x00 * b.X + x01 * b.Y + x02 * b.Z + x03;
-            double y = x10 * b.X + x11 * b.Y + x12 * b.Z + x13;
-            double z = x20 * b.X + x21 * b.Y + x22 * b.Z + x23;
+            var x = x00 * b.X + x01 * b.Y + x02 * b.Z + x03;
+            var y = x10 * b.X + x11 * b.Y + x12 * b.Z + x13;
+            var z = x20 * b.X + x21 * b.Y + x22 * b.Z + x23;
 
             return new Vector(x, y, z);
         }
 
         public Vector MulDirection(Vector b)
         {
-            double x = x00 * b.X + x01 * b.Y + x02 * b.Z;
-            double y = x10 * b.X + x11 * b.Y + x12 * b.Z;
-            double z = x20 * b.X + x21 * b.Y + x22 * b.Z;
+            var x = x00 * b.X + x01 * b.Y + x02 * b.Z;
+            var y = x10 * b.X + x11 * b.Y + x12 * b.Z;
+            var z = x20 * b.X + x21 * b.Y + x22 * b.Z;
             return new Vector(x, y, z).Normalize();
         }
 
@@ -176,22 +175,19 @@ namespace PTSharp
 
         public Box MulBox(Box box)
         {
-            Vector r = new Vector(x00, x10, x20);
-            Vector u = new Vector(x01, x11, x21);
-            Vector b = new Vector(x02, x12, x22);
-            Vector t = new Vector(x03, x13, x23);
-            Vector xa = r.MulScalar(box.Min.X);
-            Vector xb = r.MulScalar(box.Max.X);
-            Vector ya = u.MulScalar(box.Min.Y);
-            Vector yb = u.MulScalar(box.Max.Y);
-            Vector za = b.MulScalar(box.Min.Z);
-            Vector zb = b.MulScalar(box.Max.Z);
-            xa = xa.Min(xb);
-            xb = xa.Max(xb);
-            ya = ya.Min(yb);
-            yb = ya.Max(yb);
-            za = za.Min(zb);
-            zb = za.Max(zb);
+            var r = new Vector(x00, x10, x20);
+            var u = new Vector(x01, x11, x21);
+            var b = new Vector(x02, x12, x22);
+            var t = new Vector(x03, x13, x23);
+            var xa = r.MulScalar(box.Min.X);
+            var xb = r.MulScalar(box.Max.X);
+            var ya = u.MulScalar(box.Min.Y);
+            var yb = u.MulScalar(box.Max.Y);
+            var za = b.MulScalar(box.Min.Z);
+            var zb = b.MulScalar(box.Max.Z);
+            (xa, xb) = (xa.Min(xb), xa.Max(xb));
+            (ya, yb) = (ya.Min(yb), ya.Max(yb));
+            (za, zb) = (za.Min(zb), za.Max(zb));
             var min = xa.Add(ya).Add(za).Add(t);
             var max = xb.Add(yb).Add(zb).Add(t);
             return new Box(min, max);
@@ -233,7 +229,7 @@ namespace PTSharp
             m.x11 = (x02 * x23 * x30 - x03 * x22 * x30 + x03 * x20 * x32 - x00 * x23 * x32 - x02 * x20 * x33 + x00 * x22 * x33) / d;
             m.x12 = (x03 * x12 * x30 - x02 * x13 * x30 - x03 * x10 * x32 + x00 * x13 * x32 + x02 * x10 * x33 - x00 * x12 * x33) / d;
             m.x13 = (x02 * x13 * x20 - x03 * x12 * x20 + x03 * x10 * x22 - x00 * x13 * x22 - x02 * x10 * x23 + x00 * x12 * x23) / d;
-            m.x20 = (x11 * x23 * x30 - x03 * x21 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33) / d;
+            m.x20 = (x11 * x23 * x30 - x13 * x21 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33) / d;
             m.x21 = (x03 * x21 * x30 - x01 * x23 * x30 - x03 * x20 * x31 + x00 * x23 * x31 + x01 * x20 * x33 - x00 * x21 * x33) / d;
             m.x22 = (x01 * x13 * x30 - x03 * x11 * x30 + x03 * x10 * x31 - x00 * x13 * x31 - x01 * x10 * x33 + x00 * x11 * x33) / d;
             m.x23 = (x03 * x11 * x20 - x01 * x13 * x20 - x03 * x10 * x21 + x00 * x13 * x21 + x01 * x10 * x23 - x00 * x11 * x23) / d;
