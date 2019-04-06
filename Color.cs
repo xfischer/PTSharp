@@ -29,6 +29,7 @@ namespace PTSharp
 
         public static Color Black = new Color(0, 0, 0);
         public static Color White = new Color(1, 1, 1);
+
         public double R { get => r; set => r = value; }
         public double G { get => g; set => g = value; }
         public double B { get => b; set => b = value; }
@@ -42,6 +43,7 @@ namespace PTSharp
             {
                 return;
             }
+
             R = double.Parse(data[1]);
             G = double.Parse(data[2]);
             B = double.Parse(data[3]);
@@ -68,17 +70,17 @@ namespace PTSharp
 
         public int getIntFromColor(double red, double green, double blue)
         {
-            ushort r = Convert.ToUInt16(Math.Max(0, Math.Min(255, red * 255)));
-            ushort g = Convert.ToUInt16(Math.Max(0, Math.Min(255, green * 255)));
-            ushort b = Convert.ToUInt16(Math.Max(0, Math.Min(255, blue * 255)));
+            var r = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(255, red * 255)));
+            var g = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(255, green * 255)));
+            var b = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(255, blue * 255)));
             return 255 << 24 | r << 16 | g << 8 | b;
         }
 
         public int getIntFromColor64(double red, double green, double blue)
         {
-            ushort r = Convert.ToUInt16(Math.Max(0, Math.Min(65535, red * 65535)));
-            ushort g = Convert.ToUInt16(Math.Max(0, Math.Min(65535, green * 65535)));
-            ushort b = Convert.ToUInt16(Math.Max(0, Math.Min(65535, blue * 65535)));
+            var r = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(65535, red * 65535)));
+            var g = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(65535, green * 65535)));
+            var b = (byte)Convert.ToUInt16(Math.Max(0, Math.Min(65535, blue * 65535)));
             return 65535 << 24 | r << 16 | g << 8 | b;
         }
         
@@ -147,65 +149,64 @@ namespace PTSharp
             red = Math.Min(1, red / 255);
             green = Math.Min(1, green / 255);
             blue = Math.Min(1, blue / 255);
-
             return new Color(red, green, blue);
         }
 
         public Color Mix(Color b, double pct)
         {
-            Color a = this.MulScalar(1-pct);
+            Color a = MulScalar(1-pct);
             b = b.MulScalar(pct);
             return a.Add(b);
         }
 
         public Color MulScalar(double b)
         {
-            return new Color(this.R * b, this.G * b, this.B * b);
+            return new Color(R * b, G * b, B * b);
         }
 
         public Color Add(Color b)
         {
-            return new Color(this.R + b.R, this.G + b.G, this.B + b.B);
+            return new Color(R + b.R, G + b.G, B + b.B);
         }
         
         public Color Sub(Color b)
         {
-            return new Color(this.R - b.R, this.G - b.G, this.B - b.B);
+            return new Color(R - b.R, G - b.G, B - b.B);
         }
         
         public Color Mul(Color b)
         {
-            return new Color(this.R * b.R, this.G * b.G, this.B * b.B);
+            return new Color(R * b.R, G * b.G, B * b.B);
         }
 
         public Color Div(Color b)
         {
-            return new Color(this.R / b.R, this.G / b.G, this.B / b.B);
+            return new Color(R / b.R, G / b.G, B / b.B);
         }
         
         public Color DivScalar(double b)
         {
-            return new Color(this.R / b, this.G / b, this.B / b);
+            return new Color(R / b, G / b, B / b);
         }
         
         public Color Min(Color b)
         {
-            return new Color(Math.Min(this.R, b.R), Math.Min(this.G, b.G), Math.Min(this.B, b.B));
+            return new Color(Math.Min(R, b.R), Math.Min(G, b.G), Math.Min(B, b.B));
         }
         
         public Color Max(Color b)
         {
-            return new Color(Math.Max(this.R, b.R), Math.Max(this.G, b.G), Math.Max(this.B, b.B));
+            return new Color(Math.Max(R, b.R), Math.Max(G, b.G), Math.Max(B, b.B));
         }
         
         public double MinComponent()
         {
-            return Math.Min(Math.Min(this.R, this.G), this.B);
+            return Math.Min(Math.Min(R, G), B);
         }
         
         public double MaxComponent()
         {
-            return Math.Max(Math.Max(this.R, this.G), this.B);
+            return Math.Max(Math.Max(R, G), B);
         }
     }
 }
