@@ -24,8 +24,8 @@ namespace PTSharp
             c.v = c.w.Cross(c.u).Normalize();
             c.m = 1 / Math.Tan(fovy * Math.PI / 360);
             return c;
-        }
-        
+        }        
+
         public void SetFocus(Vector focalPoint_, double apertureRadius_)
         {
             focalDistance = focalPoint_.Sub(p).Length();
