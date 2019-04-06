@@ -11,7 +11,7 @@ namespace PTSharp
         static double INF = 1e9;
         internal IShape Shape;
         public double T;
-        public HitInfo HInfo;
+        public HitInfo HitInfo;
 
         public static Hit NoHit = new Hit(null, INF, null);
 
@@ -19,16 +19,16 @@ namespace PTSharp
         {
             Shape = shape;
             T = t;
-            HInfo = hinfo;
+            HitInfo = hinfo;
         }
 
         public Boolean Ok() => T < INF;
 
         public HitInfo Info(Ray r)
         {
-            if (HInfo != null)
+            if (HitInfo != null)
             {
-                return HInfo;
+                return HitInfo;
             }
             IShape shape = Shape;
             Vector position = r.Position(T);
