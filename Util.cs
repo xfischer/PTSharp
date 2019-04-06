@@ -14,31 +14,26 @@ namespace PTSharp
         public static double EPS = 1e-9;
         public static double Radians(double degrees) => degrees * Math.PI / 180;
         public static double Degrees(double radians) => radians * 180 / Math.PI;
+        
         public static Vector Cone(Vector direction, double theta, double u, double v, Random rand)
         {
-            double m1, m2, a;
-            Vector q;
-            Vector s;
-            Vector t, d;
-
             if (theta < EPS)
             {
                 return direction;
             }
            
             theta = theta * (1 - (2 * Math.Cos(u) / Math.PI));
-            m1 = Math.Sin(theta);
-            m2 = Math.Cos(theta);
-            a = v * 2 * Math.PI;
-            q = Vector.RandomUnitVector(rand);
-            s = direction.Cross(q);
-            t = direction.Cross(s);
-            d = new Vector();
+            var m1 = Math.Sin(theta);
+            var m2 = Math.Cos(theta);
+            var a = v * 2 * Math.PI;
+            var q = Vector.RandomUnitVector(rand);
+            var s = direction.Cross(q);
+            var t = direction.Cross(s);
+            var d = new Vector();
             d = d.Add(s.MulScalar(m1 * Math.Cos(a)));
             d = d.Add(t.MulScalar(m1 * Math.Sin(a)));
             d = d.Add(direction.MulScalar(m2));
             d = d.Normalize();
-            
             return d;
         }
         
@@ -46,13 +41,12 @@ namespace PTSharp
         {
             try
             {
-                Bitmap image1 = new Bitmap(path); 
-                return image1;
+                Bitmap image = new Bitmap(path); 
+                return image;
             }
             catch (System.IO.FileNotFoundException)
             {
-                Console.WriteLine("There was an error opening the bitmap." +
-                    "Please check the path.");
+                Console.WriteLine("Error: File not found. Please check image path.");
                 return null;
             }
         }
@@ -66,11 +60,10 @@ namespace PTSharp
             }
             catch (System.IO.FileNotFoundException)
             {
-                Console.WriteLine("There was an error writing image to file..." +
-                    "Please check the path.");
+                Console.WriteLine("Error: Cannot write image to file...");
             }
         }
-                
+        
         public static double Median(double[] items)
         {
             switch(items.Length)
@@ -98,7 +91,6 @@ namespace PTSharp
             double ret = x - Math.Truncate(x);
             return x;
         }
-
 
         public static double Clamp(double x, double lo, double hi)
         {
