@@ -13,7 +13,7 @@ namespace PTSharp
         Sampler Sampler;
         Buffer PBuffer;
         int SamplesPerPixel;
-        bool StratifiedSampling;
+        public bool StratifiedSampling;
         public int AdaptiveSamples;
         double AdaptiveThreshold;
         double AdaptiveExponent;
@@ -87,20 +87,17 @@ namespace PTSharp
 
         public void run()
         {
-            Scene scene = this.Scene;
-            Camera camera = this.Camera;
-            Sampler sampler = this.Sampler;
-            Buffer buf = this.PBuffer;
+            Scene scene = Scene;
+            Camera camera = Camera;
+            Sampler sampler = Sampler;
+            Buffer buf = PBuffer;
             (int w, int h) = (buf.W, buf.H);
-            int spp = this.SamplesPerPixel;
-            int sppRoot = (int)(Math.Sqrt((double)(this.SamplesPerPixel)));
+            int spp = SamplesPerPixel;
+            int sppRoot = (int)(Math.Sqrt((double)(SamplesPerPixel)));
             int ncpu = 1;
             scene.Compile();
-
             scene.rays = 0;
-
             Random rand = new Random();
-
             double fu, fv;
           
             for (int i = 0; i < ncpu; i++)
