@@ -28,7 +28,7 @@ namespace PTSharp
             return new Plane(point, normal.Normalize(), material);
         }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
             return new Box(new Vector(-Util.INF, -Util.INF, -Util.INF), new Vector(Util.INF, Util.INF, Util.INF));
         }
