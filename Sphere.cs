@@ -10,30 +10,32 @@ namespace PTSharp
     {   
         internal Vector Center;
         internal double Radius;
-        private Material SphereMaterial;
-        Box Box;
+        internal Material Material;
+        internal Box Box;
 
-        Sphere(Vector center, double radius, Material material, Box box)
+        Sphere(Vector center_, double radius_, Material material_, Box box_)
         {
-            Center = center;
-            Radius = radius;
-            SphereMaterial = material;
-            Box = box;
+            Center = center_;
+            Radius = radius_;
+            Material = material_;
+            Box = box_;
         }
         
-        internal static Sphere NewSphere(Vector center, double radius, Material material) {
-            Vector min = new Vector(center.X - radius, center.Y - radius, center.Z - radius);
-            Vector max = new Vector(center.X + radius, center.Y + radius, center.Z + radius);
-            Box box = new Box(min, max);
+        internal static Sphere NewSphere(Vector center, double radius, Material material) 
+        {
+            var min = new Vector(center.X - radius, center.Y - radius, center.Z - radius);
+            var max = new Vector(center.X + radius, center.Y + radius, center.Z + radius);
+            var box = new Box(min, max);
             return new Sphere(center, radius, material, box);
         }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
             return this.Box;
         }
 
-        Hit IShape.Intersect(Ray r) {
+        Hit IShape.Intersect(Ray r) 
+        {
             Vector to = r.Origin.Sub(this.Center);
             double b = to.Dot(r.Direction);
             double c = to.Dot(to) - this.Radius * this.Radius;
@@ -55,23 +57,24 @@ namespace PTSharp
             return Hit.NoHit;
         }
 
-        Vector IShape.UV(Vector p) {
-            double u = Math.Atan2(p.Z, p.X);
-            double v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
+        Vector IShape.UV(Vector p) 
+        {
+            var u = Math.Atan2(p.Z, p.X);
+            var v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
             u = 1 - (u + Math.PI) / (2 * Math.PI);
             v = (v + Math.PI / 2) / Math.PI;
-            return new Vector(u, v, 0);
+            return new Vector(u, v, 0);            
         }
        
-        Vector IShape.NormalAt(Vector p) {
-            return p.Sub(this.Center).Normalize();
-        }
-
         void IShape.Compile() { }
         
         Material IShape.MaterialAt(Vector v)
         {
-            return this.SphereMaterial;
+            return Material;
+        }
+        Vector IShape.NormalAt(Vector p)
+        {
+            return p.Sub(Center).Normalize();
         }
     }
 }
