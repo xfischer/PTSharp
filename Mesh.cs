@@ -1,105 +1,96 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    internal class Mesh : IShape
+    class Mesh : IShape
     {
-        private Box meshbox;
-        private Tree meshtree;
-        private Material meshmaterial;
-
-        private Triangle[] Triangles;
-        private List<Triangle> TriangleList;
-
-        public Mesh() { }
-
-        internal Mesh(Triangle[] triangles, Box box, Tree tree)
+        public Triangle[] Triangles;
+        Box box;
+        Tree tree;
+        
+        Mesh() { }
+        
+        internal Mesh(Triangle[] triangles_, Box box_, Tree tree_)
         {
-            Triangles = triangles;
-            meshbox = box;
-            meshtree = tree;
+            Triangles = triangles_;
+            box = box_;
+            tree = tree_;
         }
-
-        internal Mesh(Triangle[] triangles, Box box, Tree tree, Material material)
+        
+        internal static Mesh NewMesh(Triangle[] triangles)
         {
-            Triangles = triangles;
-            meshbox = box;
-            meshtree = tree;
-            meshmaterial = material;
+            return new Mesh(triangles, null, null);
         }
-
-        internal static Mesh NewMesh(Triangle[] triangle)
-        {
-            return new Mesh(triangle, new Box(), new Tree());
-        }
-
-        internal static Mesh NewMesh(Triangle[] triangle, Material material)
-        {
-            return new Mesh(triangle, new Box(), new Tree());
-        }
-
-        internal void Compile()
-        {
-            throw new NotImplementedException();
-        }
-
+        
         void dirty()
         {
-            meshbox = new Box();
-            meshtree = new Tree();
+            box = null;
+            tree = null;
         }
         
         Mesh Copy()
         {
             Triangle[] triangle = new Triangle[Triangles.Length];
             
-            for(int i=0; i<Triangles.Length; i++)
+            for(int i=0; i < Triangles.Length; i++)
             {
                 triangle[i] = Triangles[i];
             }
             return NewMesh(triangle);
         }
 
-        internal Hit Intersect(Ray r)
-        {
-            throw new NotImplementedException();
-        }
-
         void IShape.Compile()
         {
-            if (meshtree == null)
+            if (tree is null)
             {
-                IShape[] shapes = new IShape[Triangles.Length];
+                var shapes = new IShape[Triangles.Length];
 
-                for (int i = 0; i < Triangles.Length; i++)
+                for (int i=0; i<Triangles.Length; i++)
                 {
                     shapes[i] = Triangles[i];
                 }
-                meshtree = Tree.NewTree(shapes);
+                tree = Tree.NewTree(shapes);
+            }
+        }
+
+        internal void Compile()
+        {
+            if (tree is null)
+            {
+                List<IShape> shapes = new List<IShape>();
+
+                foreach(var triangle in Triangles)
+                {
+                    shapes.Add(triangle);
+                }
+
+                tree = Tree.NewTree(shapes.ToArray());
             }
         }
 
         void Add(Mesh b)
         {
-            
-            foreach(Triangle t in b.Triangles)
-            {
-                TriangleList = new List<Triangle>();
-                meshmaterial = b.meshmaterial;
-                TriangleList.Add(t);
-            }    
-            
-            Triangles = TriangleList.ToArray();
+            Triangle[] all = new Triangle[Triangles.Length + b.Triangles.Length];
+            Array.Copy(Triangles, all, Triangles.Length);
+            Array.Copy(b.Triangles, 0, all, Triangles.Length, b.Triangles.Length);
+            Triangles = all;
             dirty();
         }
 
-        Box IShape.GetBoundingBox()
+        internal Hit Intersect(Ray r)
         {
-            if (meshbox.Equals(null))
+            return tree.Intersect(r);
+        }
+        
+        Box IShape.BoundingBox()
+        {
+            if (box is null)
             {
                 Vector min = Triangles[0].V1;
                 Vector max = Triangles[0].V1;
@@ -109,24 +100,41 @@ namespace PTSharp
                     min = min.Min(t.V1).Min(t.V2).Min(t.V3);
                     max = max.Max(t.V1).Max(t.V2).Max(t.V3);
                 }
-                meshbox = new Box(min, max);
+                box = new Box(min, max);
             }
-            return meshbox;
+            return box;
+        }
+        
+        internal Box BoundingBox()
+        {
+            if (box is null)
+            {
+                var min = Triangles[0].V1;
+                var max = Triangles[0].V1;
+
+                foreach (Triangle t in Triangles)
+                {
+                    min = min.Min(t.V1).Min(t.V2).Min(t.V3);
+                    max = max.Max(t.V1).Max(t.V2).Max(t.V3);
+                }
+                box = new Box(min, max);
+            }
+            return box;
         }
 
         Hit IShape.Intersect(Ray r)
         {
-            return meshtree.Intersect(r);
+            return tree.Intersect(r);
         }
-        
+
         Vector IShape.UV(Vector p)
         {
             return new Vector();
         }
-        
+
         Material IShape.MaterialAt(Vector p)
         {
-            return meshmaterial;
+            return new Material();
         }
 
         Vector IShape.NormalAt(Vector p)
@@ -136,7 +144,7 @@ namespace PTSharp
 
         Vector smoothNormalsThreshold(Vector normal, Vector[] normals, double threshold)
         {
-            Vector result = new Vector(0,0,0);
+            Vector result = new Vector();
             foreach (Vector x in normals)
             {
                 if (x.Dot(normal) >= threshold)
@@ -147,76 +155,89 @@ namespace PTSharp
             return result.Normalize();
         }
 
-        void SmoothNormalsThreshold(double radians)
+        internal void SmoothNormalsThreshold(double radians)
         {
             double threshold = Math.Cos(radians);
+            
+            List<Vector> NL1 = new List<Vector>();
+            List<Vector> NL2 = new List<Vector>();
+            List<Vector> NL3 = new List<Vector>();
+
             Dictionary<Vector, Vector[]> lookup = new Dictionary<Vector, Vector[]>();
-
-            foreach (Triangle t in Triangles)
+            
+            foreach (Triangle t in this.Triangles)
             {
-                lookup[t.V1].Append(t.N1);
-                lookup[t.V2].Append(t.N2);
-                lookup[t.V3].Append(t.N3);
+                NL1.Add(t.N1);
+                NL2.Add(t.N2);
+                NL3.Add(t.N3);
 
+                lookup[t.V1] = NL1.ToArray();
+                lookup[t.V2] = NL2.ToArray();
+                lookup[t.V3] = NL3.ToArray();
             }
+
             foreach (Triangle t in Triangles)
             {
-                t.N1 = smoothNormalsThreshold(t.N1, lookup[t.N1], threshold);
-                t.N2 = smoothNormalsThreshold(t.N2, lookup[t.N2], threshold);
-                t.N3 = smoothNormalsThreshold(t.N3, lookup[t.N3], threshold);
+                t.N1 = smoothNormalsThreshold(t.N1, lookup[t.V1], threshold);
+                t.N2 = smoothNormalsThreshold(t.N2, lookup[t.V2], threshold);
+                t.N3 = smoothNormalsThreshold(t.N3, lookup[t.V3], threshold);
             }
         }
-        
-        void SmoothNormals()
+
+        public void SmoothNormals()
         {
             Dictionary<Vector, Vector> lookup = new Dictionary<Vector, Vector>();
 
-            foreach (Triangle t in Triangles)
+            foreach (var t in Triangles)
+            {
+                lookup[t.V1] = new Vector();
+                lookup[t.V2] = new Vector();
+                lookup[t.V3] = new Vector();
+            }
+
+            foreach (var t in Triangles)
             {
                 lookup[t.V1] = lookup[t.V1].Add(t.N1);
                 lookup[t.V2] = lookup[t.V2].Add(t.N2);
                 lookup[t.V3] = lookup[t.V3].Add(t.N3);
             }
 
-            foreach(KeyValuePair<Vector, Vector> kv in lookup)
+            Dictionary<Vector, Vector> lookup2 = new Dictionary<Vector, Vector>();
+
+            foreach (KeyValuePair<Vector, Vector> p in lookup)
             {
-                lookup[kv.Key] = kv.Value.Normalize();
+                lookup2[p.Key] = lookup[p.Key].Normalize();
             }
 
-            foreach (Triangle t in Triangles)
+            foreach (var t in Triangles)
             {
-                t.N1 = lookup[t.V1];
-                t.N2 = lookup[t.V2];
-                t.N3 = lookup[t.V3]; 
+                t.N1 = lookup2[t.V1];
+                t.N2 = lookup2[t.V2];
+                t.N3 = lookup2[t.V3];
             }
         }
+
         void UnitCube()
         {
             FitInside(new Box(new Vector(0, 0, 0), new Vector(1, 1, 1)), new Vector(0, 0, 0));
             MoveTo(new Vector(0, 0, 0), new Vector(0.5, 0.5, 0.5));
         }
-        
+
         public void MoveTo(Vector position, Vector anchor)
         {
-            Matrix matrix = new Matrix().Translate(position.Sub(GetBoundingBox().Anchor(anchor)));
+            Matrix matrix = new Matrix().Translate(position.Sub(BoundingBox().Anchor(anchor)));
             Transform(matrix);
         }
 
-        private Box GetBoundingBox()
+        internal void FitInside(Box box, Vector anchor)
         {
-            if (meshbox.Equals(null))
-            {
-                Vector min = Triangles[0].V1;
-                Vector max = Triangles[0].V1;
-
-                foreach (Triangle t in Triangles)
-                {
-                    min = min.Min(t.V1).Min(t.V2).Min(t.V3);
-                    max = max.Max(t.V1).Max(t.V2).Max(t.V3);
-                }
-                meshbox = new Box(min, max);
-            }
-            return meshbox;
+            var scale = box.Size().Div(BoundingBox().Size()).MinComponent();
+            var extra = box.Size().Sub(BoundingBox().Size().MulScalar(scale));
+            var matrix = Matrix.Identity;
+            matrix = matrix.Translate(BoundingBox().Min.Negate()).Mul(matrix);
+            matrix = matrix.Scale(new Vector(scale, scale, scale)).Mul(matrix);
+            matrix = matrix.Translate(box.Min.Add(extra.Mul(anchor))).Mul(matrix);
+            Transform(matrix);
         }
 
         internal void Transform(Matrix matrix)
@@ -232,24 +253,12 @@ namespace PTSharp
             }
             dirty();
         }
-        
-        void FitInside(Box box, Vector anchor)
-        {
-            double scale = box.Size().Div(this.GetBoundingBox().Size()).MinComponent();
-            Vector extra = box.Size().Sub(GetBoundingBox().Size().MulScalar(scale));
-            Matrix matrix = new Matrix();
-            matrix = matrix.Identity();
-            matrix = matrix.Translate(GetBoundingBox().Min.Negate());
-            matrix = matrix.Scale(new Vector(scale, scale, scale));
-            matrix = matrix.Translate(box.Min.Add(extra.Mul(anchor)));
-            Transform(matrix);
-        }
-        
+
         void SetMaterial(Material material)
         {
-            foreach(Triangle t in Triangles)
+            foreach (Triangle t in Triangles)
             {
-                t.TriangleMaterial = material;
+                t.Material = material;
             }
         }
     }
