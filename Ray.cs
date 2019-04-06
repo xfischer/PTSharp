@@ -10,21 +10,11 @@ namespace PTSharp
     public class Ray
     {
         internal Vector Origin, Direction;
-        internal Boolean reflected;
-        public double bouncep;
-
+        
         internal Ray(Vector Origin_, Vector Direction_)
         {
             Origin = Origin_;
             Direction = Direction_;
-        }
-
-        internal Ray(Vector Origin_, Vector Direction_, Boolean reflected_, double p)
-        {
-            Origin = Origin_;
-            Direction = Direction_;
-            reflected = reflected_;
-            bouncep = p;
         }
 
         internal Vector Position(double t) => Origin.Add(Direction.MulScalar(t));
@@ -48,14 +38,17 @@ namespace PTSharp
             return new Ray(Origin, d);
         }
 
-        public Ray ConeBounce(double theta, double u, double v, Random rand) => new Ray(Origin, Util.Cone(Direction, theta, u, v, rand));
-
-        public Ray Bounce(HitInfo info, double u, double v, BounceType bounceType, Random rand)
+        public Ray ConeBounce(double theta, double u, double v, Random rand)
         {
-            Ray n = info.Ray;
+           return new Ray(Origin, Util.Cone(Direction, theta, u, v, rand));
+        }
+
+        public (Ray, bool, double) Bounce(HitInfo info, double u, double v, BounceType bounceType, Random rand)
+        {
+            var n = info.Ray;
             var material = info.material;
-            var n1 = 1.0;
-            var n2 = material.Index;
+
+            (var n1, var n2) = (1.0, material.Index);
 
             if (info.inside)
             {
@@ -90,27 +83,18 @@ namespace PTSharp
             
             if (reflect)
             {
-                Ray reflectedRay = n.Reflect(this);
-                Ray cbounce = reflectedRay.ConeBounce(material.Gloss, u, v, rand);
-                cbounce.reflected = true;
-                cbounce.bouncep = p;
-                return cbounce;
+                var reflected = n.Reflect(this);
+                return (reflected.ConeBounce(material.Gloss, u, v, rand), true, p);
             }
             else if (material.Transparent)
             {
-                Ray refractedRay = n.Refract(this, n1, n2);
-                refractedRay.Origin = refractedRay.Origin.Add(refractedRay.Direction.MulScalar(1e-4));
-                Ray rcbounce = refractedRay.ConeBounce(material.Gloss, u, v, rand);
-                rcbounce.reflected = true;
-                rcbounce.bouncep = 1 - p;
-                return refractedRay;
+                var refracted = n.Refract(this, n1, n2);
+                refracted.Origin = refracted.Origin.Add(refracted.Direction.MulScalar(1e-4));
+                return (refracted.ConeBounce(material.Gloss, u, v, rand), true, 1 - p);
             }
             else
             {
-                Ray wBounce = WeightedBounce(u, v, rand);
-                wBounce.reflected = false;
-                wBounce.bouncep = 1 - p;
-                return wBounce;
+                return (n.WeightedBounce(u, v, rand), false, 1 - p);
             }
         }
     }
