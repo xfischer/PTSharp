@@ -30,36 +30,36 @@ namespace PTSharp
             Data = data;
         }
 
+        internal static ITexture GetTexture(string path)
+        {
+            if (textures.ContainsKey(path))
+            {
+                Console.WriteLine("Texture: " + path);
+                return textures[path];
+            }
+            else
+            {
+                Console.WriteLine("Adding texture image to list.");
+                ITexture img = new ColorTexture().LoadTexture(path);
+                textures.Add(path, img);
+                return img;
+            }
+        }
         internal ITexture LoadTexture(String path)
         {
             Console.WriteLine("Loading image...");
             Bitmap image = Util.LoadImage(path);
             if (image == null)
             {
-                Console.WriteLine("Image load failed");
+                Console.WriteLine("Image load - fail");
             }
             else
             {
-                Console.WriteLine("Load Texture >> Success");
+                Console.WriteLine("Image load - success");
             }
             return NewTexture(image);
         }
-
-        internal static ITexture GetTexture(string path)
-        {
-            if(textures.ContainsKey(path))
-            {
-                Console.WriteLine("Texture: "+ path + " ... OK");
-                return textures[path];
-            } else
-            {
-                Console.WriteLine("Adding texture to list...");
-                ITexture img = new ColorTexture().LoadTexture(path);
-                textures.Add(path, img);
-                return img;
-            }
-        }
-        
+                
         ITexture NewTexture(Bitmap image)
         {
             GraphicsUnit unit = GraphicsUnit.Pixel;
@@ -126,34 +126,30 @@ namespace PTSharp
 
         internal Color bilinearSample(double u, double v)
         {   
-             if (u == 1)
-                 u -= Util.EPS;
-             if (v == 1)
-                 v -= Util.EPS;
-             var w = (double)Width - 1;
-             var h = (double)Height - 1;
-
-             double X, Y;
-             double x, y;
-
-             (X, x) = (Modf(u * w).Item1, Modf(u * w).Item2);
-             (Y, y) = (Modf(v * h).Item1, Modf(v * h).Item2);
-
-             var x0 = (int)X;
-             var y0 = (int)Y;
-             var x1 = x0 + 1;
-             var y1 = y0 + 1;
-
-             Color c = Color.Black;
-             Color c00 = Data[y0 * this.Width + x0];
-             Color c01 = Data[y1 * this.Width + x0];
-             Color c10 = Data[y0 * this.Width + x1];
-             Color c11 = Data[y1 * this.Width + x1];
-             c = c.Add(c00.MulScalar((1 - x) * (1 - y)));
-             c = c.Add(c10.MulScalar(x * (1 - y)));
-             c = c.Add(c01.MulScalar((1 - x) * y));
-             c = c.Add(c11.MulScalar(x * y));
-             return c;
+            if (u == 1)
+                u -= Util.EPS;
+            if (v == 1)
+                v -= Util.EPS;
+            var w = (double)Width - 1;
+            var h = (double)Height - 1;
+            double X, Y;
+            double x, y;
+            (X, x) = (Modf(u * w).Item1, Modf(u * w).Item2);
+            (Y, y) = (Modf(v * h).Item1, Modf(v * h).Item2);
+            var x0 = (int)X;
+            var y0 = (int)Y;
+            var x1 = x0 + 1;
+            var y1 = y0 + 1;
+            Color c = Color.Black;
+            Color c00 = Data[y0 * this.Width + x0];
+            Color c01 = Data[y1 * this.Width + x0];
+            Color c10 = Data[y0 * this.Width + x1];
+            Color c11 = Data[y1 * this.Width + x1];
+            c = c.Add(c00.MulScalar((1 - x) * (1 - y)));
+            c = c.Add(c10.MulScalar(x * (1 - y)));
+            c = c.Add(c01.MulScalar((1 - x) * y));
+            c = c.Add(c11.MulScalar(x * y));
+            return c;
         }
 
         double Fract(double x)
@@ -194,4 +190,3 @@ namespace PTSharp
         }
     }
 }
-
