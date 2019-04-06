@@ -9,57 +9,40 @@ namespace PTSharp
 {
     public class Scene
     {
-        internal Color color;
-        internal ITexture Texture;
-        internal double textureAngle;
-        private List<IShape> shapeList;
-        private List<IShape> lightList;
-        internal IShape[] lights;
-        private IShape[] shapes;
+        internal Color Color = new Color();
+        internal ITexture Texture = null;
+        internal double TextureAngle = 0;
+        private List<IShape> shapeList = new List<IShape>();
+        private List<IShape> lightList = new List<IShape>();
+        internal IShape[] Lights = new IShape[] { };
+        private IShape[] Shapes = new IShape[] { };
         private Tree tree;
-        internal int rays;
-        
-        Scene(Color color_, ITexture texture_, double textureAngle_, IShape[] shapes_, IShape[] lights_, Tree tree_, int rays_) {
-            color =color_;
-            Texture = texture_;
-            textureAngle = textureAngle_;
-            shapes = shapes_;
-            lights = lights_;
-            tree = tree_;
-            rays = rays_;
-        }
+        internal int rays = 0;
 
-        public Scene()
-        {
-            color = new Color();
-            shapes = new IShape[] { };
-            lights = new IShape[] { };
-            shapeList = new List<IShape>();
-            lightList = new List<IShape>();
-            Texture = null;
-        }
-        
+        public Scene() { }
+            
         public void Compile()
         {
-            foreach (IShape shape in shapes)
+            foreach(IShape shape in Shapes)
             {
                 shape.Compile();
             }
-            if (tree == null)
+            if (tree is null)
             {
-                tree = Tree.NewTree(shapes);
+                tree = Tree.NewTree(Shapes);
             }
         }
 
         internal void Add(IShape shape)
         {
             shapeList.Add(shape);
-            shapes = shapeList.ToArray();
+            
             if(shape.MaterialAt(new Vector()).Emittance > 0)
             {
                 lightList.Add(shape);
-                lights = lightList.ToArray();
+                Lights = lightList.ToArray();
             }
+            Shapes = shapeList.ToArray();
         }
 
         int RayCount()
@@ -69,7 +52,7 @@ namespace PTSharp
         
         internal Hit Intersect(Ray r)
         {
-            Interlocked.Increment(ref rays);
+            rays++;
             return tree.Intersect(r);
         }
     }
