@@ -109,14 +109,12 @@ namespace PTSharp
             if (det > -Util.EPS && det < Util.EPS) 
             {
                 return Hit.NoHit;
-
             }
 
             var inv = 1 / det;
             var tx = r.Origin.X - V1.X;
             var ty = r.Origin.Y - V1.Y;
             var tz = r.Origin.Z - V1.Z;
-
             var u = (tx * px + ty * py + tz * pz) * inv;
 
             if(u < 0 || u > 1)
@@ -133,7 +131,6 @@ namespace PTSharp
             if(v < 0 || u + v > 1)
             {
                 return Hit.NoHit;
-
             }
 
             var d = (e2x * qx + e2y * qy + e2z * qz) * inv;
@@ -141,7 +138,6 @@ namespace PTSharp
             if(d < Util.EPS) {
                 return Hit.NoHit;
             }
-
             return new Hit(this, d, null);
         }
 
@@ -149,7 +145,6 @@ namespace PTSharp
         {
             (var u, var v, var w) = Barycentric(p);
             var n = new Vector();
-
             n = n.Add(N1.MulScalar(u));
             n = n.Add(N2.MulScalar(v));
             n = n.Add(N3.MulScalar(w));
@@ -179,24 +174,18 @@ namespace PTSharp
             if (Material.BumpTexture != null)
             {
                 var b = new Vector();
-
                 b = b.Add(T1.MulScalar(u));
                 b = b.Add(T2.MulScalar(v));
                 b = b.Add(T3.MulScalar(w));
-
                 var bump = Material.BumpTexture.BumpSample(b.X, b.Y);
-
                 var dv1 = V2.Sub(V1);
                 var dv2 = V3.Sub(V1);
                 var dt1 = T2.Sub(T1);
                 var dt2 = T3.Sub(T1);
-
                 var tangent = dv1.MulScalar(dt2.Y).Sub(dv2.MulScalar(dt1.Y)).Normalize();
                 var bitangent = dv2.MulScalar(dt1.X).Sub(dv1.MulScalar(dt2.X)).Normalize();
-
                 n = n.Add(tangent.MulScalar(bump.X * Material.BumpMultiplier));
                 n = n.Add(bitangent.MulScalar(bump.Y * Material.BumpMultiplier));
-
             }
             n = n.Normalize();
             return n;
