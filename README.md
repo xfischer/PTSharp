@@ -8,6 +8,6 @@ Getting Started:
 - NuGet package for NativeInterop (https://www.nuget.org/packages/NativeInterop)
 
 Status:
-Preliminary tests have been done only with Sphere and Light shapes. 
+All major primitives are fully functional. STL model import supported. 
 
 My thanks go out to Michael Fogleman for his wonderful work.
