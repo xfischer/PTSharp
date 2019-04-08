@@ -141,7 +141,6 @@ namespace PTSharp
                             int samples = (int)(v * AdaptiveSamples);
                             for (int d = 0; d < samples; d++)
                             {
-
                                 fu = rand.NextDouble();
                                 fv = rand.NextDouble();
                                 Ray ray = camera.CastRay(x, y, w, h, fu, fv, rand);
