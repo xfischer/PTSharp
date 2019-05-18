@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MathNet.Numerics;
 
 namespace PTSharp
 {
@@ -12,16 +13,17 @@ namespace PTSharp
     {
         public static double INF = 1e9;
         public static double EPS = 1e-9;
+        
         public static double Radians(double degrees) => degrees * Math.PI / 180;
+        
         public static double Degrees(double radians) => radians * 180 / Math.PI;
         
         public static Vector Cone(Vector direction, double theta, double u, double v, Random rand)
         {
-            if (theta < EPS)
+            if (theta < Util.EPS)
             {
                 return direction;
             }
-           
             theta = theta * (1 - (2 * Math.Cos(u) / Math.PI));
             var m1 = Math.Sin(theta);
             var m2 = Math.Cos(theta);
@@ -37,16 +39,33 @@ namespace PTSharp
             return d;
         }
         
+        public static Mesh CreateMesh(Material material)
+        {
+            var mesh = STL.Load("cylinder.stl", material);
+            mesh.FitInside(new Box(new Vector(-0.1, -0.1, 0), new Vector(1.1, 1.1, 100)), new Vector(0.5, 0.5, 0));
+            mesh.SmoothNormalsThreshold(Radians(10));
+            return mesh;
+        }
+
+        public static Mesh CreateBrick(int color)
+        {
+            var material = Material.GlossyMaterial(Color.HexColor(color), 1.3, Radians(20));
+            var mesh = STL.Load("toybrick.stl", material);
+	        mesh.SmoothNormalsThreshold(Radians(20));
+            mesh.FitInside(new Box(new Vector(), new Vector(2, 4, 10)), new Vector ( 0, 0, 0 ));
+	        return mesh;
+        }
         public static Bitmap LoadImage(String path)
         {
             try
             {
-                Bitmap image = new Bitmap(path); 
-                return image;
+                Bitmap image1 = new Bitmap(path); 
+                return image1;
             }
             catch (System.IO.FileNotFoundException)
             {
-                Console.WriteLine("Error: File not found. Please check image path.");
+                Console.WriteLine("There was an error opening the bitmap." +
+                    "Please check the path.");
                 return null;
             }
         }
@@ -60,39 +79,42 @@ namespace PTSharp
             }
             catch (System.IO.FileNotFoundException)
             {
-                Console.WriteLine("Error: Cannot write image to file...");
+                Console.WriteLine("There was an error writing image to file..." +
+                    "Please check the path.");
             }
         }
         
-        public static double Median(double[] items)
+        internal static double Median(double[] items)
         {
-            switch(items.Length)
+            var n = items.Length;
+            if (n == 0)
             {
-                case 0:
-                    return 0;
-                case var d when items.Length % 2 == 1:
-                    return items[items.Length / 2];
-                default:
-                    var a = items[items.Length / 2 - 1];
-                    var b = items[items.Length / 2];
-                    return (a + b) / 2;
+
+                return 0;
+            } else if (n%2 == 1)
+            {
+                return items[items.Length / 2];
+            } else { 
+                var a = items[items.Length / 2 - 1];
+                var b = items[items.Length / 2];
+               return (a + b) / 2;
             }
         }
 
-        Tuple<int, double> Modf(double input)
+        internal static (int, double) Modf(double input)
         {
-            var dec = (int)Math.Truncate(input);
+            int dec = Convert.ToInt32(Math.Truncate(input));
             var frac = input - Math.Truncate(input);
-            return new Tuple<int, double>(dec, frac);
+            return (dec, frac);
         }
 
-        public static double Fract(double x)
+        internal static double Fract(double x)
         {
             double ret = x - Math.Truncate(x);
             return x;
         }
-
-        public static double Clamp(double x, double lo, double hi)
+        
+        internal static double Clamp(double x, double lo, double hi)
         {
             if (x < lo)
                 return lo;
@@ -101,7 +123,7 @@ namespace PTSharp
             return x;
         }
         
-        public static int ClampInt(int x, int lo, int hi)
+        internal static int ClampInt(int x, int lo, int hi)
         {
             if (x < lo)
                 return lo;
@@ -110,7 +132,7 @@ namespace PTSharp
             return x;
         }
 
-        static String NumberString(double x)
+        internal static String NumberString(double x)
         {
             return x.ToString();
         }
