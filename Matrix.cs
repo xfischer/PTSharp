@@ -1,10 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
 
 namespace PTSharp
 {
@@ -38,11 +32,11 @@ namespace PTSharp
             x33 = x33_;
         }
 
-        internal static Matrix Identity = new Matrix(1, 0, 0, 0, 
-                                                     0, 1, 0, 0, 
-                                                     0, 0, 1, 0, 
+        internal static Matrix Identity = new Matrix(1, 0, 0, 0,
+                                                     0, 1, 0, 0,
+                                                     0, 0, 1, 0,
                                                      0, 0, 0, 1);
-        
+
         internal Matrix Translate(Vector v)
         {
             return new Matrix(1, 0, 0, v.X,
@@ -70,20 +64,19 @@ namespace PTSharp
                               m * v.Z * v.X + v.Y * s, m * v.Y * v.Z - v.X * s, m * v.Z * v.Z + c, 0,
                               0, 0, 0, 1);
         }
-        
+
         internal Matrix Frustum(double l, double r, double b, double t, double n, double f)
         {
             double t1 = 2 * n;
             double t2 = r - l;
             double t3 = t - b;
             double t4 = f - n;
-
             return new Matrix(t1 / t2, 0, (r + l) / t2, 0,
                               0, t1 / t3, (t + b) / t3, 0,
                               0, 0, (-f - n) / t4, (-t1 * f) / t4,
                               0, 0, -1, 0);
         }
-        
+
         internal Matrix Orthographic(double l, double r, double b, double t, double n, double f)
         {
             return new Matrix(2 / (r - l), 0, 0, -(r + l) / (r - l),
@@ -98,7 +91,7 @@ namespace PTSharp
             double xmax = ymax * aspect;
             return Frustum(-xmax, xmax, -ymax, ymax, near, far);
         }
-        
+
         internal Matrix LookAtMatrix(Vector eye, Vector center, Vector up)
         {
             up = up.Normalize();
@@ -114,21 +107,12 @@ namespace PTSharp
             return m.Transpose().Inverse().Translate(m, eye);
         }
 
-        internal Matrix Translate(Matrix m, Vector v)
-        {
-            return new Matrix().Translate(v).Mul(m);
-        }
+        internal Matrix Translate(Matrix m, Vector v) => new Matrix().Translate(v).Mul(m);
 
-        public Matrix Scale(Matrix m, Vector v)
-        {
-            return Scale(v).Mul(m);
-        }
+        public Matrix Scale(Matrix m, Vector v) => Scale(v).Mul(m);
 
-        public Matrix Rotate(Matrix m, Vector v, double a)
-        {
-            return Rotate(v,a).Mul(m);
-        }
-               
+        public Matrix Rotate(Matrix m, Vector v, double a) => Rotate(v, a).Mul(m);
+
         public Matrix Mul(Matrix b)
         {
             Matrix m = new Matrix();
@@ -150,7 +134,7 @@ namespace PTSharp
             m.x33 = x30 * b.x03 + x31 * b.x13 + x32 * b.x23 + x33 * b.x33;
             return m;
         }
-               
+
         public Vector MulPosition(Vector b)
         {
             var x = x00 * b.X + x01 * b.Y + x02 * b.Z + x03;
@@ -168,10 +152,7 @@ namespace PTSharp
             return new Vector(x, y, z).Normalize();
         }
 
-        public Ray MulRay(Ray b)
-        {
-            return new Ray(MulPosition(b.Origin), MulDirection(b.Direction));
-        }
+        public Ray MulRay(Ray b) => new Ray(MulPosition(b.Origin), MulDirection(b.Direction));
 
         public Box MulBox(Box box)
         {
@@ -193,13 +174,7 @@ namespace PTSharp
             return new Box(min, max);
         }
 
-        public Matrix Transpose()
-        {
-            return new Matrix(x00, x10, x20, x30,
-                              x01, x11, x21, x31,
-                              x02, x12, x22, x32,
-                              x03, x13, x23, x33);
-        }
+        public Matrix Transpose() => new Matrix(x00, x10, x20, x30, x01, x11, x21, x31, x02, x12, x22, x32, x03, x13, x23, x33);
 
         public double Determinant()
         {
