@@ -1,39 +1,29 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
     public class Color
     {
-        private double r;
-        private double g;
-        private double b;
-        private int alpha;
+        internal double r;
+        internal double g;
+        internal double b;
 
         public Color(Color c)
         {
-            this.R = c.R;
-            this.G = c.G;
-            this.B = c.B;
+            r = c.r;
+            g = c.g;
+            b = c.b;
         }
 
         public Color(double R, double G, double B)
         {
-            this.R = R;
-            this.G = G;
-            this.B = B;
+            r = R;
+            g = G;
+            b = B;
         }
 
         public static Color Black = new Color(0, 0, 0);
         public static Color White = new Color(1, 1, 1);
-
-        public double R { get => r; set => r = value; }
-        public double G { get => g; set => g = value; }
-        public double B { get => b; set => b = value; }
-        public int Alpha { get => alpha; set => alpha = value; }
 
         public Color() { }
 
@@ -43,17 +33,13 @@ namespace PTSharp
             {
                 return;
             }
-
-            R = double.Parse(data[1]);
-            G = double.Parse(data[2]);
-            B = double.Parse(data[3]);
+            r = double.Parse(data[1]);
+            g = double.Parse(data[2]);
+            b = double.Parse(data[3]);
         }
 
-        public static Color NewColor(int r, int g, int b)
-        {
-            return new Color((double)r / 65535, (double)g / 65535, (double)b / 65535);
-        }
-        
+        public static Color NewColor(int r, int g, int b) => new Color((double)r / 65535, (double)g / 65535, (double)b / 65535);
+
         public static Color HexColor(int x)
         {
             var red = Convert.ToDouble((x >> 16) & 0xff) / 255;
@@ -62,11 +48,8 @@ namespace PTSharp
             Color color = new Color(red, green, blue);
             return color.Pow(2.2);
         }
-        
-        public Color Pow(double b)
-        {
-            return new Color(Math.Pow(this.R, b), Math.Pow(this.G, b), Math.Pow(this.B, b));
-        }
+
+        public Color Pow(double b) => new Color(Math.Pow(r, b), Math.Pow(g, b), Math.Pow(this.b, b));
 
         public int getIntFromColor(double red, double green, double blue)
         {
@@ -88,7 +71,6 @@ namespace PTSharp
        {
             double red, green, blue;
             double a, b, c, x;
-
             // red
             if (K >= 6600)
             {
@@ -103,14 +85,12 @@ namespace PTSharp
             {
                 red = 255;
             }
-
             if (K >= 6600)
             {
                 a = 325.4494125711974;   
                 b = 0.07943456536662342; 
                 c = -28.0852963507957;   
                 x = K / 100 - 50;
-
                 green = a + b * x + c * Math.Log(x);
             }
             else if (K >= 1000)
@@ -120,13 +100,11 @@ namespace PTSharp
                 c = 104.49216199393888;
                 x = K / 100 - 2;
                 green = a + b * x + c * Math.Log(x);
-
             }
             else
             {
                 green = 0;
             }
-
             if (K >= 6600)
             {
                 blue = 255;
@@ -145,7 +123,6 @@ namespace PTSharp
             {
                 blue = 0;
             }
-
             red = Math.Min(1, red / 255);
             green = Math.Min(1, green / 255);
             blue = Math.Min(1, blue / 255);
@@ -154,59 +131,29 @@ namespace PTSharp
 
         public Color Mix(Color b, double pct)
         {
-            Color a = MulScalar(1-pct);
+            Color a = MulScalar(1 - pct);
             b = b.MulScalar(pct);
             return a.Add(b);
         }
 
-        public Color MulScalar(double b)
-        {
-            return new Color(R * b, G * b, B * b);
-        }
+        public Color MulScalar(double b) => new Color(r * b, g * b, this.b * b);
 
-        public Color Add(Color b)
-        {
-            return new Color(R + b.R, G + b.G, B + b.B);
-        }
-        
-        public Color Sub(Color b)
-        {
-            return new Color(R - b.R, G - b.G, B - b.B);
-        }
-        
-        public Color Mul(Color b)
-        {
-            return new Color(R * b.R, G * b.G, B * b.B);
-        }
+        public Color Add(Color b) => new Color(r + b.r, g + b.g, this.b + b.b);
 
-        public Color Div(Color b)
-        {
-            return new Color(R / b.R, G / b.G, B / b.B);
-        }
-        
-        public Color DivScalar(double b)
-        {
-            return new Color(R / b, G / b, B / b);
-        }
-        
-        public Color Min(Color b)
-        {
-            return new Color(Math.Min(R, b.R), Math.Min(G, b.G), Math.Min(B, b.B));
-        }
-        
-        public Color Max(Color b)
-        {
-            return new Color(Math.Max(R, b.R), Math.Max(G, b.G), Math.Max(B, b.B));
-        }
-        
-        public double MinComponent()
-        {
-            return Math.Min(Math.Min(R, G), B);
-        }
-        
-        public double MaxComponent()
-        {
-            return Math.Max(Math.Max(R, G), B);
-        }
+        public Color Sub(Color b) => new Color(r - b.r, g - b.g, this.b - b.b);
+
+        public Color Mul(Color b) => new Color(r * b.r, g * b.g, this.b * b.b);
+
+        public Color Div(Color b) => new Color(r / b.r, g / b.g, this.b / b.b);
+
+        public Color DivScalar(double b) => new Color(r / b, g / b, this.b / b);
+
+        public Color Min(Color b) => new Color(Math.Min(r, b.r), Math.Min(g, b.g), Math.Min(this.b, b.b));
+
+        public Color Max(Color b) => new Color(Math.Max(r, b.r), Math.Max(g, b.g), Math.Max(this.b, b.b));
+
+        public double MinComponent() => Math.Min(Math.Min(r, g), b);
+
+        public double MaxComponent() => Math.Max(Math.Max(r, g), b);
     }
 }
