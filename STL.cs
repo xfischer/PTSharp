@@ -3,11 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -79,7 +77,7 @@ namespace PTSharp
                     new STLVector(1, 0, 0)),
         };
     
-        public static Mesh LoadSTL(String filePath, Material material)
+        public static Mesh Load(String filePath, Material material)
         {
           
             byte[] buffer = new byte[80];
@@ -100,6 +98,7 @@ namespace PTSharp
                     int filelength = (int)reader.BaseStream.Length;
                     string code = reader.ReadByte().ToString() + reader.ReadByte().ToString();
                     reader.BaseStream.Close();
+
                     //Console.WriteLine("Code = " + code);
                     if (code.Equals("00") || code.Equals("10181") || code.Equals("8689") || code.Equals("19593"))
                     {
@@ -127,6 +126,7 @@ namespace PTSharp
             List<Triangle> triangles = new List<Triangle>();
             Vector[] varray;
             Match match = null;
+
             const string regex = @"\s*(facet normal|vertex)\s+(?<X>[^\s]+)\s+(?<Y>[^\s]+)\s+(?<Z>[^\s]+)";
             const NumberStyles numberStyle = (NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign);
             StreamReader file = new StreamReader(filename);
@@ -146,10 +146,13 @@ namespace PTSharp
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
                             //Reading facet
+                            //Console.WriteLine("Read facet on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
+
                             Vector f = new Vector(x, y, z);
+                            //Console.WriteLine("Added facet (x,y,z)"+ " "+x+" "+y+" "+z);
                             facetnormal.Add(f);
                         }
 
@@ -159,17 +162,21 @@ namespace PTSharp
                         // Checking if we are in the outer loop line
                         if (line.Contains("outer loop"))
                         {
-                             line = file.ReadLine();
+                            //Console.WriteLine("Outer loop");
+                            line = file.ReadLine();
                             counter++;
                         }
 
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
+                            //Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
+
                             Vector v = new Vector(x, y, z);
+                            //Console.WriteLine("Added vertex 1 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                         }
 
@@ -179,10 +186,13 @@ namespace PTSharp
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
+                            //Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
+
                             Vector v = new Vector(x, y, z);
+                            //Console.WriteLine("Added vertex 2 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                             line = file.ReadLine();
                             counter++;
@@ -191,10 +201,13 @@ namespace PTSharp
                         if (line.Contains("vertex"))
                         {
                             match = Regex.Match(line, regex, RegexOptions.IgnoreCase);
+                            //Console.WriteLine("Read vertex on line " + counter);
                             double.TryParse(match.Groups["X"].Value, numberStyle, CultureInfo.InvariantCulture, out double x);
                             double.TryParse(match.Groups["Y"].Value, numberStyle, CultureInfo.InvariantCulture, out double y);
                             double.TryParse(match.Groups["Z"].Value, numberStyle, CultureInfo.InvariantCulture, out double z);
+
                             Vector v = new Vector(x, y, z);
+                            //Console.WriteLine("Added vertex 3 (x,y,z)" + " " + x + " " + y + " " + z);
                             vertexes.Add(v);
                             line = file.ReadLine();
                             counter++;
@@ -202,12 +215,14 @@ namespace PTSharp
                         
                         if (line.Contains("endloop"))
                         {
+                            //Console.WriteLine("End loop");
                             line = file.ReadLine();
                             counter++;
                         }
                         
                         if (line.Contains("endfacet"))
                         {
+                            //Console.WriteLine("End facet");
                             line = file.ReadLine();
                             counter++;
 
