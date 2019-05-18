@@ -20,13 +20,16 @@ namespace PTSharp
             Z = z;
             Index = 0;
         }
+
+        public const int MinimumDataLength = 4;
+        public const string Prefix = "v";
+        
         public static Vector RandomUnitVector(Random rand)
         {
             for (;;)
             {
                 double x, y, z;
-
-                if (rand.Equals(null))
+                if (rand is null)
                 {
                     x = new Random().NextDouble() * 2 - 1;
                     y = new Random().NextDouble() * 2 - 1;
@@ -65,9 +68,10 @@ namespace PTSharp
 
         public Vector Cross(Vector b)
         {
-            return new Vector(Y * b.Z - Z * b.Y,
-                              Z * b.X - X * b.Z,
-                              X * b.Y - Y * b.X);
+            var x = Y * b.Z - Z * b.Y;
+            var y = Z * b.X - X * b.Z;
+            var z = X * b.Y - Y * b.X;
+            return new Vector(x, y, z);
         }
 
         public Vector Normalize()
@@ -94,9 +98,13 @@ namespace PTSharp
 
         public Vector Div(Vector b) => new Vector(X / b.X, Y / b.Y, Z / b.Z);
 
-        public Vector Mod(Vector b) => new Vector(X - (b.X * Math.Floor(X / b.X)),
-                                                  Y - (b.Y * Math.Floor(Y / b.Y)),
-                                                  Z - (b.Z * Math.Floor(Z / b.Z)));
+        public Vector Mod(Vector b)
+        {
+            var x = X - b.X * Math.Floor(X / b.X);
+            var y = Y - b.Y * Math.Floor(Y / b.Y);
+            var z = Z - b.Z * Math.Floor(Z / b.Z);
+            return new Vector(x, y, z);
+        }
 
         public Vector AddScalar(double b) => new Vector(X + b, Y + b, Z + b);
 
@@ -106,19 +114,13 @@ namespace PTSharp
 
         public Vector DivScalar(double b) => new Vector(X / b, Y / b, Z / b);
 
-        public Vector Min(Vector b)
-        {
-            return new Vector(Math.Min(X, b.X), Math.Min(Y, b.Y), Math.Min(Z, b.Z));
-        }
+        public Vector Min(Vector b) => new Vector(Math.Min(X, b.X), Math.Min(Y, b.Y), Math.Min(Z, b.Z));
 
         public Vector Max(Vector b) => new Vector(Math.Max(X, b.X), Math.Max(Y, b.Y), Math.Max(Z, b.Z));
 
         public Vector MinAxis()
         {
-            var x = Math.Abs(this.X);
-            var y = Math.Abs(this.Y);
-            var z = Math.Abs(this.Z);
-
+            (var x, var y, var z) = (Math.Abs(X), Math.Abs(Y), Math.Abs(Z));
             if (x <= y && x <= z)
             {
                 return new Vector(1, 0, 0);
