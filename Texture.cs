@@ -1,14 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
-    public class ColorTexture : ITexture
+    class ColorTexture : ITexture
     {
         public int Width;
         public int Height;
@@ -16,7 +12,7 @@ namespace PTSharp
         
         internal static IDictionary<string, ITexture> textures = new Dictionary<string, ITexture>();
 
-        internal ColorTexture()
+        ColorTexture()
         {
             Width = 0;
             Height = 0;
@@ -34,12 +30,12 @@ namespace PTSharp
         {
             if (textures.ContainsKey(path))
             {
-                Console.WriteLine("Texture: " + path);
+                Console.WriteLine("Texture: " + path + " ... OK");
                 return textures[path];
             }
             else
             {
-                Console.WriteLine("Adding texture image to list.");
+                Console.WriteLine("Adding texture to list...");
                 ITexture img = new ColorTexture().LoadTexture(path);
                 textures.Add(path, img);
                 return img;
@@ -47,15 +43,15 @@ namespace PTSharp
         }
         internal ITexture LoadTexture(String path)
         {
-            Console.WriteLine("Loading image...");
+            Console.WriteLine("IMG: "+path);
             Bitmap image = Util.LoadImage(path);
             if (image == null)
             {
-                Console.WriteLine("Image load - fail");
+                Console.WriteLine("IMG load: FAIL");
             }
             else
             {
-                Console.WriteLine("Image load - success");
+                Console.WriteLine("IMG load: OK ");
             }
             return NewTexture(image);
         }
@@ -101,50 +97,29 @@ namespace PTSharp
             return this;
         }
 
-        Tuple<double,double> Modf(double input)
+        Color bilinearSample(double u, double v)
         {
-            double integral;
-            double fractional;
-            if (input < 1)
+            if(u == 1)
             {
-                if (input < 0)
-                {
-                    integral = Math.Truncate(input);
-                    fractional = input - integral;
-                    return new Tuple<double, double>(-integral, -fractional);
-                }
-                if (input == 0)
-                {
-                    return new Tuple<double, double>(-0, -0);
-                }
-                return new Tuple<double, double>(0, input);
-            }
-            integral = Math.Truncate(input);
-            fractional = input - integral;
-            return new Tuple<double, double>(integral,fractional);
-        }
-
-        internal Color bilinearSample(double u, double v)
-        {   
-            if (u == 1)
                 u -= Util.EPS;
-            if (v == 1)
+            }
+            if(v == 1)
+            {
                 v -= Util.EPS;
-            var w = (double)Width - 1;
+            }
+            var w = (double)Width -1;
             var h = (double)Height - 1;
-            double X, Y;
-            double x, y;
-            (X, x) = (Modf(u * w).Item1, Modf(u * w).Item2);
-            (Y, y) = (Modf(v * h).Item1, Modf(v * h).Item2);
+            (var X, var x) = Util.Modf(u * w);
+            (var Y, var y) = Util.Modf(v * h);
             var x0 = (int)X;
             var y0 = (int)Y;
             var x1 = x0 + 1;
             var y1 = y0 + 1;
-            Color c = Color.Black;
-            Color c00 = Data[y0 * this.Width + x0];
-            Color c01 = Data[y1 * this.Width + x0];
-            Color c10 = Data[y0 * this.Width + x1];
-            Color c11 = Data[y1 * this.Width + x1];
+            var c00 = Data[y0 * Width + x0];
+            var c01 = Data[y1 * Width + x0];
+            var c10 = Data[y0 * Width + x1];
+            var c11 = Data[y1 * Width + x1];
+            var c = Color.Black;
             c = c.Add(c00.MulScalar((1 - x) * (1 - y)));
             c = c.Add(c10.MulScalar(x * (1 - y)));
             c = c.Add(c01.MulScalar((1 - x) * y));
@@ -154,7 +129,7 @@ namespace PTSharp
 
         double Fract(double x)
         {
-            x = Modf(x).Item2;
+            x = Util.Modf(x).Item2;
             return x;
         }
 
@@ -169,8 +144,8 @@ namespace PTSharp
         {
             u = Fract(Fract(u) + 1);
             v = Fract(Fract(v) + 1);
-            Color c = bilinearSample(u, 1 - v);
-            return new Vector(c.R * 2 - 1, c.G * 2 - 1, c.B * 2 - 1).Normalize();
+            var c = bilinearSample(u, 1 - v);
+            return new Vector(c.r * 2 - 1, c.g * 2 - 1, c.b * 2 - 1).Normalize();
         }
 
         Vector ITexture.BumpSample(double u, double v)
@@ -178,15 +153,13 @@ namespace PTSharp
             u = Fract(Fract(u) + 1);
             v = Fract(Fract(v) + 1);
             v = 1 - v;
-            int x = (int)(u * (double)Width);
-            int y = (int)(v * (double)Height);
-            int x1 = Util.ClampInt(x - 1, 0, this.Width - 1);
-            int x2 = Util.ClampInt(x + 1, 0, this.Width - 1);
-            int y1 = Util.ClampInt(y - 1, 0, this.Height - 1);
-            int y2 = Util.ClampInt(y + 1, 0, this.Height - 1);
+            int x = (int)(u * Width);
+            int y = (int)(v * Height);
+            (var x1, var x2) = (Util.ClampInt(x - 1, 0, Width - 1), Util.ClampInt(x + 1, 0, Width - 1));
+            (var y1, var y2) = (Util.ClampInt(y - 1, 0, Height - 1), Util.ClampInt(y + 1, 0, Height - 1));
             Color cx = Data[y * Width + x1].Sub(Data[y * Width + x2]);
             Color cy = Data[y1 * Width + x].Sub(Data[y2 * Width + x]);
-            return new Vector(cx.R, cy.R, 0);
+            return new Vector(cx.r, cy.r, 0);
         }
     }
 }
