@@ -9,54 +9,44 @@ namespace PTSharp
     interface SDF 
     {
         double Evaluate(Vector p);
-        Box GetBoundingBox();
+        Box BoundingBox();
     }
 
-    class SDFShape : SDF
+    class SDFShape : IShape, SDF
     {
-        SDF sdf;
-        Material material;
-
-        public Box GetBoundingBox()
-        {
-            throw new NotImplementedException();
-        }
+        SDF SDF;
+        Material Material;
 
         SDFShape(SDF sdf, Material material)
         {
-            this.sdf = sdf;
-            this.material = material;
+            SDF = sdf;
+            Material = material;
         }
 
-        SDF NewSDFShape(SDF sdf, Material material)
+        internal static IShape NewSDFShape(SDF sdf, Material material)
         {
             return new SDFShape(sdf, material);
         }
-                
 
         public void Compile() { }
        
-        Hit Intersect(Ray ray)
+        Hit IShape.Intersect(Ray ray)
         {
-            double epsilon = 0.0001;
+            double epsilon = 0.00001;
             double start = 0.0001;
             double jumpSize = 0.001;
-            Box box = this.GetBoundingBox();
-            double[] t_ = box.Intersect(ray);
-            double t1 = t_[0];
-            double t2 = t_[1];
-
+            Box box = BoundingBox();
+            (double t1, double t2) = box.Intersect(ray);
             if (t2 < t1 || t2 < 0)
             {
                 return Hit.NoHit;
             }
-
             double t = Math.Max(start, t1);
             bool jump = true;
 
             for (int i = 0; i < 1000; i++)
             {
-                double d = this.Evaluate(ray.Position(t));
+                var d = Evaluate(ray.Position(t));
                 if(jump && d < 0)
                 {
                     t -= jumpSize;
@@ -66,13 +56,12 @@ namespace PTSharp
 
                 if ( d < epsilon)
                 {
-                    return new Hit((IShape)this, t, null);
+                    return new Hit(this, t, null);
                 }
 
                 if (jump && d < jumpSize)
                 {
                     d = jumpSize;
-        
                 }
 
                 t += d;
@@ -80,41 +69,43 @@ namespace PTSharp
                 if( t > t2)
                 {
                     return Hit.NoHit;
-
                 }
             }
             return Hit.NoHit;
         }
 
-        public Material MaterialAt(Vector v)
-        {
-            return this.material;
-        }
-
-        public Vector NormalAt(Vector p)
-        {
-            double e = 0.0001;
-            double x = p.X;
-            double y = p.Y;
-            double z = p.Z;
-
-            return new Vector(this.Evaluate(new Vector(x - e, y, z)) - this.Evaluate(new Vector(x + e, y, z)),
-                              this.Evaluate(new Vector(x, y - e, z)) - this.Evaluate(new Vector(x, y + e, z)),
-                              this.Evaluate(new Vector(x, y, z - e)) - this.Evaluate(new Vector(x, y, z + e)));
-        }
-
-        public Vector UV(Vector uv)
+        Vector IShape.UV(Vector uv)
         {
             return new Vector();
         }
 
+        Vector IShape.NormalAt(Vector p)
+        {
+            double e = 0.0001;
+            (var x, var y, var z) = (p.X, p.Y, p.Z);
+            var n = new Vector(Evaluate(new Vector( x - e, y, z)) - Evaluate(new Vector( x + e, y, z)),
+		                       Evaluate(new Vector( x, y - e, z)) - Evaluate(new Vector( x, y + e, z)),
+		                       Evaluate(new Vector( x, y, z - e)) - Evaluate(new Vector( x, y, z + e)));
+            return n.Normalize();
+        }
+
+        Material IShape.MaterialAt(Vector v)
+        {
+            return Material;
+        }
+
+        public Box BoundingBox()
+        {
+            return SDF.BoundingBox();
+        }
+
         public double Evaluate(Vector p)
         {
-            return sdf.Evaluate(p);
+            return SDF.Evaluate(p);
         }
     }
 
-    class SphereSDF : SDF
+    internal class SphereSDF : SDF
     {
         double Radius;
         double Exponent;
@@ -125,54 +116,51 @@ namespace PTSharp
             this.Exponent = Exponent;
         }
         
-        public double Evaluate(Vector p)
-        {
-            return p.LengthN(this.Exponent) - this.Radius;
-        }
-        
-        SDF NewSphereSDF(double radius)
+        internal static SDF NewSphereSDF(double radius)
         {
             return new SphereSDF(radius, 2);
         }
 
-        Box SDF.GetBoundingBox()
+        double SDF.Evaluate(Vector p)
         {
-            double r = this.Radius;
+            return p.LengthN(Exponent) - Radius;
+        }
+
+        Box SDF.BoundingBox()
+        {
+            double r = Radius;
             return new Box(new Vector(-r, -r, -r), new Vector(r, r, r));
         }
     }
 
-    class CubeSDF : SDF
+    internal class CubeSDF : SDF
     {
         Vector Size;
 
         CubeSDF(Vector size)
         {
-            this.Size = size;
+            Size = size;
         }
         
-        SDF NewCubeSDF(Vector size)
+        internal static SDF NewCubeSDF(Vector size)
         {
             return new CubeSDF(size);
         }
         
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
             double x = p.X;
             double y = p.Y;
             double z = p.Z;
-
             if (x < 0)
                 x = -x;
             if (y < 0)
                 y = -y;
             if (z < 0)
                 z = -z;
-
-            x -= this.Size.X / 2;
-            y -= this.Size.Y / 2;
-            z -= this.Size.Z / 2;
-
+            x -= Size.X / 2;
+            y -= Size.Y / 2;
+            z -= Size.Z / 2;
             double a = x;
             if (y > a)
                 a = y;
@@ -190,17 +178,14 @@ namespace PTSharp
             return a + b;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            double x, y, z;
-            x = this.Size.X / 2;
-            y = this.Size.Y / 2;
-            z = this.Size.Z / 2;
-            return new Box(new Vector(-y, -y, -z), new Vector(x, y, z));
+            (var x, var y, var z) = (Size.X / 2, Size.Y / 2, Size.Z / 2);
+            return new Box(new Vector(-x, -y, -z), new Vector(x, y, z));
         }
     }
 
-    class CylinderSDF:SDF
+    internal class CylinderSDF : SDF
     {
         double Radius;
         double Height;
@@ -211,19 +196,26 @@ namespace PTSharp
             this.Height = Height;
         }
         
-        SDF NewCylinderSDF(double radius, double height)
+        internal static SDF NewCylinderSDF(double radius, double height)
         {
             return new CylinderSDF(radius, height);
         }
 
-        public Box GetBoundingBox()
+        internal Box BoundingBox()
         {
-            double r = this.Radius;
-            double h = this.Height / 2;
+            double r = Radius;
+            double h = Height / 2;
+            return new Box(new Vector(-r, -h, -r), new Vector(r, h, r));
+        }
+        
+        Box SDF.BoundingBox()
+        {
+            double r = Radius;
+            double h = Height / 2;
             return new Box(new Vector(-r, -h, -r), new Vector(r, h, r));
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
             double x = Math.Sqrt(p.X * p.X + p.Z * p.Z);
             double y = p.Y;
@@ -232,8 +224,9 @@ namespace PTSharp
                 x = -x;
             if (y < 0)
                 y = -y;
-            x -= this.Radius;
-            y -= this.Height / 2;
+            x -= Radius;
+            y -= Height / 2;
+
             double a = x;
 
             if (y > a)
@@ -263,25 +256,23 @@ namespace PTSharp
             this.Radius = Radius;
             this.Exponent = Exponent;
         }
-        
-        SDF NewCapsuleSDF(Vector a, Vector b, double radius)
+        internal static SDF NewCapsuleSDF(Vector a, Vector b, double radius)
         {
             return new CapsuleSDF(a, b, radius, 2);
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
-            Vector pa = p.Sub(this.A);
-            Vector ba = this.B.Sub(this.A);
-            double h = Math.Max(0, Math.Min(1, pa.Dot(ba) / ba.Dot(ba)));
-            return pa.Sub(ba.MulScalar(h)).LengthN(this.Exponent) - this.Radius;
+            var pa = p.Sub(A);
+            var ba = B.Sub(A);
+            var h = Math.Max(0, Math.Min(1, pa.Dot(ba) / ba.Dot(ba)));
+            return pa.Sub(ba.MulScalar(h)).LengthN(Exponent) - Radius;
         }
 
-        Box SDF.GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            Vector a = this.A.Min(this.B);
-            Vector b = this.A.Max(this.B);
-            return new Box(a.SubScalar(this.Radius), b.AddScalar(this.Radius));
+            (var a, var b) = (A.Min(B), A.Max(B));
+            return new Box(a.SubScalar(Radius), b.AddScalar(Radius));
         }
     }
 
@@ -300,26 +291,26 @@ namespace PTSharp
             this.MinorExponent = MinorExponent;
         }
         
-        SDF NewTorusSDF(double major, double minor)
+        internal static SDF NewTorusSDF(double major, double minor)
         {
             return new TorusSDF(major, minor, 2, 2);
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
-            Vector q = new Vector(new Vector(p.X, p.Y, 0).LengthN(this.MajorExponent) - this.MajorRadius, p.Z, 0);
-            return q.LengthN(this.MinorExponent) - this.MinRadius;
+            Vector q = new Vector(new Vector(p.X, p.Y, 0).LengthN(MajorExponent) - MajorRadius, p.Z, 0);
+            return q.LengthN(MinorExponent) - MinRadius;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            double a = this.MinRadius;
-            double b = this.MinRadius + this.MajorRadius;
+            double a = MinRadius;
+            double b = MinRadius + MajorRadius;
             return new Box(new Vector(-b, -b, a), new Vector(b, b, a));
         }
     }
 
-    class TransformSDF:SDF
+    internal class TransformSDF : SDF
     {
         SDF SDF;
         Matrix Matrix;
@@ -332,20 +323,24 @@ namespace PTSharp
             this.Inverse = Inverse;
         }
 
-        SDF NewTransformSDF(SDF sdf, Matrix matrix)
+        internal static SDF NewTransformSDF(SDF sdf, Matrix matrix)
         {
             return new TransformSDF(sdf, matrix, matrix.Inverse());
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
-            Vector q = this.Inverse.MulPosition(p);
-            return this.SDF.Evaluate(q);
+            var q = Inverse.MulPosition(p);
+            return SDF.Evaluate(q);
+        }
+        internal Box BoundingBox()
+        {
+            return Matrix.MulBox(SDF.BoundingBox());
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            return this.Matrix.MulBox(this.SDF.GetBoundingBox());
+            return Matrix.MulBox(SDF.BoundingBox());
         }
     }
 
@@ -356,25 +351,25 @@ namespace PTSharp
 
         ScaleSDF(SDF sdf, double Factor)
         {
-            this.SDF = sdf;
+            SDF = sdf;
             this.Factor = Factor;
         }
         
-        SDF NewScaleSDF(SDF sdf, double factor)
+        internal static SDF NewScaleSDF(SDF sdf, double factor)
         {
             return new ScaleSDF(sdf, factor);
         }
         
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
-            return this.SDF.Evaluate(p.DivScalar(this.Factor)) * this.Factor;
+            return SDF.Evaluate(p.DivScalar(Factor)) * Factor;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            double f = this.Factor;
+            double f = Factor;
             Matrix m = new Matrix().Scale(new Vector(f, f, f));
-            return m.MulBox(this.SDF.GetBoundingBox());
+            return m.MulBox(SDF.BoundingBox());
         }
     }
 
@@ -387,16 +382,16 @@ namespace PTSharp
             this.Items = Items;
         }
 
-        SDF NewUnionSDF(SDF[] items)
+        internal static SDF NewUnionSDF(SDF[] items)
         {
             return new UnionSDF(items);
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
             double result = 0;
             int i = 0;
-            foreach (SDF item in this.Items)
+            foreach (SDF item in Items)
             {
                 double d = item.Evaluate(p);
                 if (i == 0 || d < result)
@@ -408,7 +403,7 @@ namespace PTSharp
             return result;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
             Box result = new Box();
             Box box;
@@ -416,7 +411,7 @@ namespace PTSharp
 
             foreach (SDF item in Items)
             {
-                box = item.GetBoundingBox();
+                box = item.BoundingBox();
                 if (i == 0)
                 {
                     result = box;
@@ -431,7 +426,7 @@ namespace PTSharp
         }
     }
     
-    class DifferenceSDF: SDF
+    internal class DifferenceSDF : SDF
     {
         SDF[] Items;
 
@@ -440,18 +435,16 @@ namespace PTSharp
             this.Items = Items;
         }
         
-        SDF NewDifferenceSDF(SDF[] items)
+        internal static SDF NewDifferenceSDF(List<SDF> items)
         {
-            return new DifferenceSDF(items);
+            return new DifferenceSDF(items.ToArray());
         }
 
-    
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
             double result = 0;
             int i = 0;
-
-            foreach (SDF item in this.Items)
+            foreach (SDF item in Items)
             {
                 double d = item.Evaluate(p);
                 if (i == 0)
@@ -466,13 +459,13 @@ namespace PTSharp
             return result;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
-            return this.Items[0].GetBoundingBox();
+            return Items[0].BoundingBox();
         }
     }
 
-    class IntersectionSDF : SDF
+    internal class IntersectionSDF : SDF
     {
         SDF[] Items;
         
@@ -481,18 +474,16 @@ namespace PTSharp
             this.Items = Items;
         }
 
-        SDF NewIntersectionSDF(SDF[] items)
+        internal static SDF NewIntersectionSDF(List<SDF> items)
         {
-            return new IntersectionSDF(items);
+            return new IntersectionSDF(items.ToArray());
         }
 
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
             double result = 0;
-
             int i = 0;
-
-            foreach (SDF item in this.Items)
+            foreach (SDF item in Items)
             {
                 double d = item.Evaluate(p);
                 if (i == 0 || d > result)
@@ -504,14 +495,14 @@ namespace PTSharp
             return result;
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
             Box result = new Box();
             int i = 0;
 
-            foreach (SDF item in this.Items)
+            foreach (SDF item in Items)
             {
-                Box box = item.GetBoundingBox();
+                Box box = item.BoundingBox();
                 if (i == 0)
                 {
                     result = box;
@@ -533,22 +524,22 @@ namespace PTSharp
 
         RepeatSDF(SDF sdf, Vector step)
         {
-            this.SDF = sdf;
-            this.Step = step;
+            SDF = sdf;
+            Step = step;
         }
 
-        SDF NewRepeaterSDF(SDF sdf, Vector step)
+        internal static SDF NewRepeaterSDF(SDF sdf, Vector step)
         {
             return new RepeatSDF(sdf, step);
         }
         
-        public double Evaluate(Vector p)
+        double SDF.Evaluate(Vector p)
         {
-            Vector q = p.Mod(this.Step).Sub(this.Step.DivScalar(2));
-            return this.SDF.Evaluate(q);
+            Vector q = p.Mod(Step).Sub(Step.DivScalar(2));
+            return SDF.Evaluate(q);
         }
 
-        public Box GetBoundingBox()
+        Box SDF.BoundingBox()
         {
             return new Box();
         }
