@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
 
 namespace PTSharp
@@ -20,7 +16,7 @@ namespace PTSharp
         public List<Pixel> PixelList;
         byte[] imageBuffer;
 
-        public Buffer() {}
+        public Buffer() { }
 
         public Buffer(int width, int height)
         {
@@ -29,7 +25,6 @@ namespace PTSharp
             imageBuffer = new byte[256 * 4 * height];
             Pixels = new Pixel[width * height];
             PixelList = new List<Pixel>(width * height);
-
             for (int i = 0; i < Pixels.Length; i++)
             {
                 Pixels[i] = new Pixel(0, new Color(0, 0, 0), new Color(0, 0, 0));
@@ -59,37 +54,21 @@ namespace PTSharp
             Array.Copy(Pixels, 0, pixcopy, 0, Pixels.Length);
             return new Buffer(W, H, pixcopy);
         }
-        
-        public void AddSample(int x, int y, Color sample)
-        {
-            Pixels[y * W + x].AddSample(sample);
-        }
-        
-        public int Samples(int x, int y)
-        {
-            return Pixels[y * W + x].Samples;
-        }
-        
-        public Color Color(int x, int y)
-        {
-            return Pixels[y * W + x].Color();
-        }
-        
-        public Color Variance(int x, int y)
-        {
-            return Pixels[y * W + x].Variance();
-        }
-        
-        public Color StandardDeviation(int x, int y)
-        {
-            return Pixels[y * W + x].StandardDeviation();
-        }
+
+        public void AddSample(int x, int y, Color sample) => Pixels[y * W + x].AddSample(sample);
+
+        public int Samples(int x, int y) => Pixels[y * W + x].Samples;
+
+        public Color Color(int x, int y) => Pixels[y * W + x].Color();
+
+        public Color Variance(int x, int y) => Pixels[y * W + x].Variance();
+
+        public Color StandardDeviation(int x, int y) => Pixels[y * W + x].StandardDeviation();
 
         public Bitmap Image(Channel channel)
         {
             Bitmap bmp = new Bitmap(W, H);
             double maxSamples=0;
-
             if (channel == Channel.SamplesChannel)
             {
                 foreach (Pixel pix in Pixels)
@@ -97,7 +76,6 @@ namespace PTSharp
                     maxSamples = Math.Max(maxSamples, pix.Samples);
                 }
             }
-
             for (int y = 0; y < H; y++)
             {
                 for (int x = 0; x < W; x++)
@@ -119,7 +97,7 @@ namespace PTSharp
                             pixelColor = new Color(p, p, p);
                             break;
                     }
-                    bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(pixelColor.getIntFromColor(pixelColor.R, pixelColor.G, pixelColor.B)));
+                    bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(pixelColor.getIntFromColor(pixelColor.r, pixelColor.g, pixelColor.b)));
                 }
             }
             return bmp;
@@ -143,22 +121,17 @@ namespace PTSharp
             public void AddSample(Color sample)
             {
                 Samples++;
-
                 if (Samples == 1)
                 {
                     M = sample;
                     return;
                 }
-
-                Color m = this.M;
-                M = M.Add(sample.Sub(M).DivScalar(Samples));
+                Color m = M;
+                M = M.Add(sample.Sub(M).DivScalar((double)Samples));
                 V = V.Add(sample.Sub(m).Mul(sample.Sub(M)));
             }
 
-            public Color Color()
-            {
-                return M;
-            }
+            public Color Color() => M;
 
             public Color Variance()
             {
@@ -166,13 +139,10 @@ namespace PTSharp
                 {
                     return new Color(0, 0, 0);
                 }
-                return V.DivScalar(Samples - 1);
+                return V.DivScalar((double)(Samples - 1));
             }
 
-            public Color StandardDeviation()
-            {
-                return Variance().Pow(0.5);
-            }
+            public Color StandardDeviation() => Variance().Pow(0.5);
         }
     }
 }
