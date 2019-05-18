@@ -1,8 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -26,25 +24,24 @@ namespace PTSharp
         
         Vector normalize(Vector v)
         {
-            double i = Math.Floor(v.X / this.size);
-            double j = Math.Floor(v.Y / this.size);
+            var i = Math.Floor(v.X / size);
+            var j = Math.Floor(v.Y / size);
             return new Vector(i, j, 0);
         }
 
         bool insert(Vector v)
         {
-            Vector n = this.normalize(v);
-            bool ok = true;
+            Vector n = normalize(v);
 
             for (double i = n.X - 2; i < n.X + 3; i++)
             {
                 for (double j = n.Y - 2; j < n.Y + 3; j++)
                 {
-                    if(ok = cells.ContainsKey(new Vector(i, j, 0)))
+                    if(cells.ContainsKey(new Vector(i, j, 0)))
                     {
                         Vector m = cells[new Vector(i, j, 0)];
 
-                        if(Math.Sqrt(Math.Pow(m.X-v.X, 2) + Math.Pow(m.Y-v.Y, 2)) < this.r)
+                        if(Math.Sqrt(Math.Pow(m.X-v.X, 2) + Math.Pow(m.Y-v.Y, 2)) < r)
                         {
                             return false;
                         }
@@ -57,15 +54,13 @@ namespace PTSharp
         
         Vector[] PoissonDisc(double x1, double y1, double x2, double y2, double r, int n)
         {
-        
+            var rand = new Random();
             List<Vector> result;
-            Random rand = new Random();
-            double x = x1 + (x2 - x1) / 2;
-            double y = y1 + (y2 - y1) / 2;
-
-            Vector v = new Vector(x, y, 0);
+            var x = x1 + (x2 - x1) / 2;
+            var y = y1 + (y2 - y1) / 2;
+            var v = new Vector(x, y, 0);
             List<Vector> active = new List<Vector>();
-            Poisson grid = newPoissonGrid(r);
+            var grid = newPoissonGrid(r);
             grid.insert(v);
             active.Add(v);
             result = active;
@@ -77,7 +72,6 @@ namespace PTSharp
                 int index = rand.Next(active.Count);
                 Vector point = active.ElementAt(index);
                 bool ok = false;
-                
                 for (int i = 0; i < n; i++)
                 {
                     double a = rand.NextDouble() * 2 * Math.PI;
@@ -86,16 +80,13 @@ namespace PTSharp
                     y = point.Y + Math.Sin(a) * d;
                     if (x < x1 || y < y1 || x > x2 || y > y2)
                     {
-
+                        continue;
                     }
-
                     v = new Vector(x, y, 0);
-
                     if (!grid.insert(v))
                     {
                         continue;
                     }
-                    
                     result.Add(v);
                     active.Add(v);
                     ok = true;
@@ -106,9 +97,8 @@ namespace PTSharp
                 {
                     active.Add(active.ElementAt(active.Count));
                 }
-
             }
-            return (Vector[])result.ToArray();
+            return result.ToArray();
         }
     }
 }
