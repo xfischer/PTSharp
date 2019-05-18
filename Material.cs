@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -80,11 +76,11 @@ namespace PTSharp
             {
                 material.Color = material.Texture.Sample(uv.X, uv.Y);
             }
-            if (material.GlossTexture != null)
+            if(material.GlossTexture != null)
             {
-                Color c = material.GlossTexture.Sample(uv.X, uv.Y);
-                material.Gloss = (c.R + c.G + c.B) / 3;
-            }
+                var c = material.GlossTexture.Sample(uv.X, uv.Y);
+                material.Gloss = (c.r + c.g + c.b) / 3;
+             }
             return material;
         }
     };
