@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -24,8 +20,8 @@ namespace PTSharp
             c.v = c.w.Cross(c.u).Normalize();
             c.m = 1 / Math.Tan(fovy * Math.PI / 360);
             return c;
-        }        
-
+        }
+        
         public void SetFocus(Vector focalPoint_, double apertureRadius_)
         {
             focalDistance = focalPoint_.Sub(p).Length();
@@ -40,19 +36,19 @@ namespace PTSharp
             Vector d = new Vector();
             d = d.Add(this.u.MulScalar(-px * aspect));
             d = d.Add(this.v.MulScalar(-py));
-            d = d.Add(this.w.MulScalar(this.m));
+            d = d.Add(this.w.MulScalar(m));
             d = d.Normalize();
-            var p1 = this.p;
+            var p = this.p;
             if (apertureRadius > 0)
             {
-                var focalPoint = p.Add(d.MulScalar(focalDistance));
+                var focalPoint = this.p.Add(d.MulScalar(focalDistance));
                 var angle = rand.NextDouble() * 2 * Math.PI;
                 var radius = rand.NextDouble() * apertureRadius;
-                p1 = p1.Add(this.u.MulScalar(Math.Cos(angle) * radius));
-                p1 = p1.Add(this.v.MulScalar(Math.Sin(angle) * radius));
-                d = focalPoint.Sub(p1).Normalize();
+                p = p.Add(this.u.MulScalar(Math.Cos(angle) * radius));
+                p = p.Add(this.v.MulScalar(Math.Sin(angle) * radius));
+                d = focalPoint.Sub(p).Normalize();
             }
-            return new Ray(p1, d);
+            return new Ray(p, d);
         }
     }
 }
