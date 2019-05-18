@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -27,24 +23,6 @@ namespace PTSharp
 
         Renderer() {}
         
-        Renderer(Scene scn, Camera cam, Sampler sampler, int width, int height)
-        {
-            this.Scene = scn;
-            this.Camera = cam;
-            this.Sampler = sampler;
-            this.width = width;
-            this.height = height;
-            this.PBuffer = new Buffer(width, height);
-            this.SamplesPerPixel = 1;
-            this.StratifiedSampling = false;
-            this.AdaptiveSamples = 0;
-            this.AdaptiveThreshold = 1;
-            this.AdaptiveExponent = 1;
-            this.FireflySamples = 0;
-            this.FireflyThreshold = 1;
-            this.NumCPU = Environment.ProcessorCount;
-        }
-        
         public static Renderer NewRenderer(Scene scene, Camera camera, Sampler sampler, int w, int h)
         {
             Renderer r = new Renderer();
@@ -62,22 +40,6 @@ namespace PTSharp
             return r;
         }
 
-        public System.Drawing.Bitmap IterativeRender(String pathTemplate, int iterations)
-        {
-            this.iterations = iterations;
-
-            for (int iter = 1; iter < this.iterations; iter++)
-            {
-                Console.WriteLine("[Iteration:" + iter + " of " + iterations + "]");
-                this.run();
-                this.pathTemplate = pathTemplate;
-                System.Drawing.Bitmap finalrender = this.PBuffer.Image(Channel.ColorChannel);
-                Console.WriteLine("Writing file...");
-                finalrender.Save(pathTemplate);
-            }
-            return PBuffer.Image(Channel.ColorChannel);
-        }
-        
         void writeImage(String path, Buffer buf, Channel channel)
         {
             System.Drawing.Bitmap finalrender = buf.Image(channel);
@@ -141,6 +103,7 @@ namespace PTSharp
                             int samples = (int)(v * AdaptiveSamples);
                             for (int d = 0; d < samples; d++)
                             {
+
                                 fu = rand.NextDouble();
                                 fv = rand.NextDouble();
                                 Ray ray = camera.CastRay(x, y, w, h, fu, fv, rand);
@@ -167,12 +130,27 @@ namespace PTSharp
                 }
             }
         }
-        
-        void FrameRender(String path, int iterations)
+
+        public System.Drawing.Bitmap IterativeRender(String pathTemplate, int iterations)
+        {
+            this.iterations = iterations;
+            for (int iter = 1; iter < this.iterations; iter++)
+            {
+                Console.WriteLine("[Iteration:" + iter + " of " + iterations + "]");
+                this.run();
+                this.pathTemplate = pathTemplate;
+                System.Drawing.Bitmap finalrender = this.PBuffer.Image(Channel.ColorChannel);
+                Console.WriteLine("Writing file...");
+                finalrender.Save(pathTemplate);
+            }
+            return PBuffer.Image(Channel.ColorChannel);
+        }
+
+        internal void FrameRender(String path, int iterations)
         {
             for (int i = 1; i <= iterations; i++)
             {
-                Console.WriteLine("Iterations " + i + "of " + iterations);
+                Console.WriteLine("Iterations " + i + " of " + iterations);
                 this.run();
             }
             Buffer buf = PBuffer.Copy();
