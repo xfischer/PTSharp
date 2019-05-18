@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -29,24 +25,17 @@ namespace PTSharp
 
         void IShape.Compile() { }
 
-        Box IShape.BoundingBox()
-        {
-            return Box;
-        }
+        Box IShape.BoundingBox() => Box;
 
         Hit IShape.Intersect(Ray r)
         {
             var n = Min.Sub(r.Origin).Div(r.Direction);
             var f = Max.Sub(r.Origin).Div(r.Direction);
-
             (n,f) = (n.Min(f),n.Max(f));
-
             var t0 = Math.Max(Math.Max(n.X, n.Y), n.Z);
             var t1 = Math.Min(Math.Min(f.X, f.Y), f.Z);
-
             if (t0 > 0 && t0 < t1)
                 return new Hit(this, t0, null);
-
             return Hit.NoHit;
         }
 
@@ -56,11 +45,8 @@ namespace PTSharp
             return new Vector(p.X, p.Z, 0);
         }
 
-        Material IShape.MaterialAt(Vector p)
-        {
-            return Material;
-        }
-        
+        Material IShape.MaterialAt(Vector p) => Material;
+
         Vector IShape.NormalAt(Vector p)
         {
             switch (p)
@@ -83,18 +69,18 @@ namespace PTSharp
         
         Mesh CubeMesh()
         {
-            Vector a = Min;
-            Vector b = Max;
-            Vector z = new Vector();
-            Material m = Material;
-            Vector v000 = new Vector(a.X, a.Y, a.Z);
-            Vector v001 = new Vector(a.X, a.Y, b.Z);
-            Vector v010 = new Vector(a.X, b.Y, a.Z);
-            Vector v011 = new Vector(a.X, b.Y, b.Z);
-            Vector v100 = new Vector(b.X, a.Y, a.Z);
-            Vector v101 = new Vector(b.X, a.Y, b.Z);
-            Vector v110 = new Vector(b.X, b.Y, a.Z);
-            Vector v111 = new Vector(b.X, b.Y, b.Z);
+            var a = Min;
+            var b = Max;
+            var z = new Vector();
+            var m = Material;
+            var v000 = new Vector(a.X, a.Y, a.Z);
+            var v001 = new Vector(a.X, a.Y, b.Z);
+            var v010 = new Vector(a.X, b.Y, a.Z);
+            var v011 = new Vector(a.X, b.Y, b.Z);
+            var v100 = new Vector(b.X, a.Y, a.Z);
+            var v101 = new Vector(b.X, a.Y, b.Z);
+            var v110 = new Vector(b.X, b.Y, a.Z);
+            var v111 = new Vector(b.X, b.Y, b.Z);
             Triangle[] triangles = {
                 Triangle.NewTriangle(v000, v100, v110, z, z, z, m),
                 Triangle.NewTriangle(v000, v110, v010, z, z, z, m),
