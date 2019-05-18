@@ -31,14 +31,13 @@ namespace PTSharp
 
         Box IShape.BoundingBox()
         {
-            return this.Box;
+            return Box;
         }
 
-        Hit IShape.Intersect(Ray r) 
-        {
-            Vector to = r.Origin.Sub(this.Center);
+        Hit IShape.Intersect(Ray r) {
+            Vector to = r.Origin.Sub(Center);
             double b = to.Dot(r.Direction);
-            double c = to.Dot(to) - this.Radius * this.Radius;
+            double c = to.Dot(to) - Radius * Radius;
             double d = b * b - c;
             if (d > 0)
             {
@@ -57,8 +56,8 @@ namespace PTSharp
             return Hit.NoHit;
         }
 
-        Vector IShape.UV(Vector p) 
-        {
+        Vector IShape.UV(Vector p) {
+            //p = p.Sub(Center);
             var u = Math.Atan2(p.Z, p.X);
             var v = Math.Atan2(p.Y, new Vector(p.X, 0, p.Z).Length());
             u = 1 - (u + Math.PI) / (2 * Math.PI);
@@ -72,6 +71,7 @@ namespace PTSharp
         {
             return Material;
         }
+        
         Vector IShape.NormalAt(Vector p)
         {
             return p.Sub(Center).Normalize();
