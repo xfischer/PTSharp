@@ -8,6 +8,6 @@ Getting Started:
 - NuGet package for NativeInterop (https://www.nuget.org/packages/NativeInterop)
 
 Status:
-All major primitives are fully functional. STL model import supported. 
+I have ported across as much as I could from original Go codebase. I could use some help in multi-threading as this is a challenge that I have not been able to fully handle so far. 
 
 My thanks go out to Michael Fogleman for his wonderful work.
