@@ -1,9 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
@@ -36,7 +31,6 @@ namespace PTSharp
         internal void Add(IShape shape)
         {
             shapeList.Add(shape);
-            
             if(shape.MaterialAt(new Vector()).Emittance > 0)
             {
                 lightList.Add(shape);
