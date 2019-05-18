@@ -30,40 +30,12 @@ namespace PTSharp
             this.Material = Material;
         }
 
-        internal Triangle(Vector v1, Vector v2, Vector v3, Vector t1, Vector t2, Vector t3, Material Material)
-        {
-            this.Material = Material;
-            V1 = v1;
-            V2 = v2;
-            V3 = v3;
-            T1 = t1;
-            T2 = t2;
-            T3 = t3;
-        }
-
         internal static Triangle NewTriangle(Vector v1, Vector v2, Vector v3, Vector t1, Vector t2, Vector t3, Material material)
         {
             Triangle t = new Triangle();
             t.V1 = v1;
             t.V2 = v2;
             t.V3 = v3;
-            t.T1 = t1;
-            t.T2 = t2;
-            t.T3 = t3;
-            t.Material = material;
-            t.FixNormals();
-            return t;
-        }
-
-        internal static Triangle NewTriangle(Vector v1, Vector v2, Vector v3, Vector n1, Vector n2, Vector n3, Vector t1, Vector t2, Vector t3, Material material)
-        {
-            Triangle t = new Triangle();
-            t.V1 = v1;
-            t.V2 = v2;
-            t.V3 = v3;
-            t.N1 = n1;
-            t.N2 = n2;
-            t.N3 = n3;
             t.T1 = t1;
             t.T2 = t2;
             t.T3 = t3;
@@ -125,12 +97,12 @@ namespace PTSharp
             var qx = ty * e1z - tz * e1y;
             var qy = tz * e1x - tx * e1z;
             var qz = tx * e1y - ty * e1x;
-
             var v = (r.Direction.X * qx + r.Direction.Y * qy + r.Direction.Z * qz) * inv;
 
-            if(v < 0 || u + v > 1)
+            if((v < 0) || ((u + v) > 1))
             {
                 return Hit.NoHit;
+
             }
 
             var d = (e2x * qx + e2y * qy + e2z * qz) * inv;
@@ -138,8 +110,21 @@ namespace PTSharp
             if(d < Util.EPS) {
                 return Hit.NoHit;
             }
+
             return new Hit(this, d, null);
         }
+
+        Vector IShape.UV(Vector p)
+        {
+            (var u, var v, var w) = Barycentric(p);
+            var n = new Vector();
+            n = n.Add(T1.MulScalar(u));
+            n = n.Add(T2.MulScalar(v));
+            n = n.Add(T3.MulScalar(w));
+            return new Vector(n.X, n.Y, 0);
+        }
+
+        Material IShape.MaterialAt(Vector v) => Material;
 
         Vector IShape.NormalAt(Vector p)
         {
@@ -150,7 +135,7 @@ namespace PTSharp
             n = n.Add(N3.MulScalar(w));
             n = n.Normalize();
 
-            if (Material.NormalTexture != null)
+            if(Material.NormalTexture != null)
             {
                 var b = new Vector();
                 b = b.Add(T1.MulScalar(u));
@@ -168,10 +153,11 @@ namespace PTSharp
                 var matrix = new Matrix(T.X, B.X, N.X, 0,
                                         T.Y, B.Y, N.Y, 0,
                                         T.Z, B.Z, N.Z, 0,
-                                         0, 0, 0, 1);
+                                        0, 0, 0, 1);
                 n = matrix.MulDirection(ns);
             }
-            if (Material.BumpTexture != null)
+
+            if(Material.BumpTexture != null)
             {
                 var b = new Vector();
                 b = b.Add(T1.MulScalar(u));
@@ -190,17 +176,7 @@ namespace PTSharp
             n = n.Normalize();
             return n;
         }
-        
-        Vector IShape.UV(Vector p)
-        {
-            (var u, var v, var w) = Barycentric(p);
-            var n = new Vector();
-            n = n.Add(T1.MulScalar(u));
-            n = n.Add(T2.MulScalar(v));
-            n = n.Add(T3.MulScalar(w));
-            return new Vector(n.X, n.Y, 0);
-        }
-        
+                
         double Area() {
             var e1 = V2.Sub(V1);
             var e2 = V3.Sub(V1);
@@ -228,7 +204,7 @@ namespace PTSharp
             var v = (d11 * d20 - d01 * d21) / d;
             var w = (d00 * d21 - d01 * d20) / d;
             var u = 1 - v - w;
-            return (u, v , w);
+            return (u, v, w);
         }
         public void FixNormals()
         {
@@ -243,7 +219,5 @@ namespace PTSharp
             if (N3.Equals(zero))
                 N3 = n;
         }
-        
-        Material IShape.MaterialAt(Vector v) => Material;
     }
 }
