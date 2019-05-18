@@ -1,60 +1,76 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
     class MC 
     {
-        public Mesh NewSDFMesh(SDF sdf, Box box, double step)
+        public static T[] Concat<T>(params T[][] arrays)
         {
-            Vector min = box.Min;
-            Vector size = box.Size();
-            int nx = (int)(Math.Ceiling(size.X / step));
-            int ny = (int)(Math.Ceiling(size.Y / step));
-            int nz = (int)(Math.Ceiling(size.Z / step));
-            double sx = size.X / (double)nx;
-            double sy = size.Y / (double)ny;
-            double sz = size.Z / (double)nz;
-            List<Triangle> triangles = new List<Triangle>();
-            Triangle[] merged = null;
+            // return (from array in arrays from arr in array select arr).ToArray();
+            var result = new T[arrays.Sum(a => a.Length)];
+            int offset = 0;
+            for (int x = 0; x < arrays.Length; x++)
+            {
+                arrays[x].CopyTo(result, offset);
+                offset += arrays[x].Length;
+            }
+            return result;
+        }
 
+        internal static Mesh NewSDFMesh(SDF sdf, Box box, double step)
+        {
+            var min = box.Min;
+            var size = box.Size();
+            var nx = (int)Math.Ceiling(size.X / step);
+            var ny = (int)Math.Ceiling(size.Y / step);
+            var nz = (int)Math.Ceiling(size.Z / step);
+            var sx = size.X / nx;
+            var sy = size.Y / ny;
+            var sz = size.Z / nz;
+            List<Triangle> triangles = new List<Triangle>();
             for (int x = 0; x < nx - 1; x++)
             {
-                for (int y = 0; y < ny - 1; y++)
+                for(int y = 0; y < ny - 1; y++)
                 {
-                    for (int z = 0; z < nz - 1; z++)
+                    for(int z = 0; z < nz - 1; z++)
                     {
-                        double x0, y0, z0;
-                        double x1, y1, z1;
-                        (x0, y0, z0) = (((double)x * sx + min.X), ((double)y * sy + min.Y),((double)z * sz + min.Z));
-                        (x1, y1, z1) = (x0 + sx, y0 + sy, z0 + sz);
-                        
-                        Vector[] p = new Vector[8];
-                        p[0] = new Vector(x0, y0, z0);
-                        p[1] = new Vector(x1, y0, z0);
-                        p[2] = new Vector(x1, y1, z0);
-                        p[3] = new Vector(x0, y1, z0);
-                        p[4] = new Vector(x0, y0, z1);
-                        p[5] = new Vector(x1, y0, z1);
-                        p[6] = new Vector(x1, y1, z1);
-                        p[7] = new Vector(x0, y1, z1);
-                        
+                        (var x0, var y0, var z0) = ((double)x * sx + min.X, (double)y * sy + min.Y, (double)z * sz + min.Z);
+                        (var x1, var y1, var z1) = (x0 + sx, y0 + sy, z0 + sz);
+
+                        var p = new Vector[8] {
+                                new Vector( x0, y0, z0),
+                                new Vector( x1, y0, z0),
+                                new Vector( x1, y1, z0),
+                                new Vector( x0, y1, z0),
+                                new Vector( x0, y0, z1),
+                                new Vector( x1, y0, z1),
+                                new Vector( x1, y1, z1),
+                                new Vector( x0, y1, z1)
+                        };
+
                         double[] v = new double[8];
-                        for (int i = 0; i < 8; i++)
+        
+                        for(int i = 0; i < 8; i++)
                         {
                             v[i] = sdf.Evaluate(p[i]);
                         }
-                        merged = mcPolygonize(p, v, 0);
+
+                        if (mcPolygonize(p, v, 0) == null)
+                        {
+                            continue;
+                        } else
+                        {
+                            triangles.AddRange(mcPolygonize(p, v, 0));                      
+                        }
                     }
                 }
             }
-            return Mesh.NewMesh(merged);
+            return Mesh.NewMesh(triangles.ToArray());
         }
         
-        Triangle[] mcPolygonize(Vector[] p, double[] v, double x)
+        static Triangle[] mcPolygonize(Vector[] p, double[] v, double x)
         {
             int index = 0;
             for (int i = 0; i < 8; i++)
@@ -71,7 +87,7 @@ namespace PTSharp
             Vector[] points = new Vector[12];
             for (int i = 0; i < 12; i++)
             {
-                int bit = 1 << i;
+                int bit = 1 << Convert.ToUInt16(i);
                 if ((edgetable[index] & bit) != 0)
                 {
                     int a = pairTable[i][0];
@@ -79,20 +95,22 @@ namespace PTSharp
                     points[i] = mcInterpolate(p[a], p[b], v[a], v[b], x);
                 }
             }
-            int[] table = triangleTable[index];
-            int count = table.Length / 3;
+            var table = triangleTable[index];
+            var count = table.Length / 3;
             Triangle[] result = new Triangle[count];
-
             for (int i = 0; i < count; i++)
             {
-                Triangle triangle = new Triangle(points[table[i * 3 + 2]], points[table[i * 3 + 1]], points[table[i * 3 + 0]]);
+                Triangle triangle = new Triangle();
+                triangle.V3 = points[table[i * 3 + 0]];
+                triangle.V2 = points[table[i * 3 + 1]];
+                triangle.V1 = points[table[i * 3 + 2]];
                 triangle.FixNormals();
                 result[i] = triangle;
             }
             return result;
         }
         
-        Vector mcInterpolate(Vector p1, Vector p2, double v1, double v2, double x)
+        static Vector mcInterpolate(Vector p1, Vector p2, double v1, double v2, double x)
         {
             if (Math.Abs(x - v1) < Util.EPS)
                 return p1;
@@ -100,18 +118,17 @@ namespace PTSharp
                 return p2;
             if (Math.Abs(v1 - v2) < Util.EPS)
                 return p1;
-            double t = (x - v1) / (v2 - v1);
-
+            var t = (x - v1) / (v2 - v1);
             return new Vector(p1.X + t * (p2.X - p1.X), p1.Y + t * (p2.Y - p1.Y), p1.Z + t * (p2.Z - p1.Z));
         }
 
-        public int[][] pairTable =  { 
+        static int[][] pairTable =  { 
             new int[] {0, 1}, new int[] {1, 2}, new int[] {2, 3}, new int[] {3, 0}, 
             new int[] {4, 5}, new int[] {5, 6}, new int[] {6, 7}, new int[] {7, 4},
             new int[] {0, 4}, new int[] {1, 5}, new int[] {2, 6}, new int[] {3, 7}
         };
 
-        public int[] edgetable =
+        static int[] edgetable =
         {
             0x0000, 0x0109, 0x0203, 0x030a, 0x0406, 0x050f, 0x0605, 0x070c,
             0x080c, 0x0905, 0x0a0f, 0x0b06, 0x0c0a, 0x0d03, 0x0e09, 0x0f00,
@@ -147,7 +164,7 @@ namespace PTSharp
             0x070c, 0x0605, 0x050f, 0x0406, 0x030a, 0x0203, 0x0109, 0x0000
         };
 
-        public int[][] triangleTable = new int[][] 
+        static int[][] triangleTable = new int[][] 
         {   
             new int[] {},
             new int[] {0, 8, 3},
