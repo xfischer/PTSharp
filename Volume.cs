@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace PTSharp
 {
     public class Volume : IShape
@@ -12,9 +13,14 @@ namespace PTSharp
         public struct VolumeWindow
         {
             public double Lo, Hi;
-            private Material material;
+            internal Material VolumeWindowMaterial;
 
-            internal Material Material { get => material; set => material = value; }
+            internal VolumeWindow(double l, double h, Material mat)
+            {
+                Lo = l;
+                Hi = h;
+                VolumeWindowMaterial = mat;
+            }
         }
 
         int W, H, D;
@@ -25,7 +31,8 @@ namespace PTSharp
 
         public Volume() { }
 
-        Volume(int W, int H, int D, double ZScale, double[] Data, VolumeWindow[] Windows, Box Box) {
+        Volume(int W, int H, int D, double ZScale, double[] Data, VolumeWindow[] Windows, Box Box)
+        {
             this.W = W;
             this.H = H;
             this.D = D;
@@ -35,31 +42,34 @@ namespace PTSharp
             this.Box = Box;
         }
         
-        public double Get(int x, int y, int z) {
-            if (x < 0 || y < 0 || z < 0 || x >= this.W || y >= this.H || z >= this.D) {
+        public double Get(int x, int y, int z)
+        {
+            if (x < 0 || y < 0 || z < 0 || x >= W || y >= H || z >= D) {
                 return 0;
             }
-            return Data[x + y * this.W + z * this.W * this.H];
+            return Data[x + y * W + z * W * H];
         }
         
-        Volume NewVolume(Box box, Bitmap[] images, double sliceSpacing, VolumeWindow[] windows)
+        internal static Volume NewVolume(Box box, Bitmap[] images, double sliceSpacing, VolumeWindow[] windows)
         {
-            int w = images[0].Width;
-            int h = images[0].Height;
+            GraphicsUnit unit = GraphicsUnit.Pixel;
+            RectangleF boundsF = images[0].GetBounds(ref unit);
+            Rectangle bounds = new Rectangle((int)boundsF.Left, (int)boundsF.Top, (int)boundsF.Width, (int)boundsF.Height);
+            int w = (int)boundsF.Height;
+            int h = (int)boundsF.Width;
             int d = images.Length;
             double zs = (sliceSpacing * (double)d) / (double)w;
             double[] data = new double[w * h * d];
-
             int zval = 0;
-
-            foreach (Bitmap z in images)
-            {
-                
-                for(int y =0; y<h; h++)
+            foreach(var image in images)
+            { 
+                for(int y = 0; y < h; y++)
                 {
-                    for(int x =0; x<w; x++)
+                    for(int x = 0; x < w; x++)
                     {
-                        double f = (double) z.GetPixel(x,y).ToArgb() / 65535;
+                        var r = image.GetPixel(x, y).R;
+                        double f = (double)r / 65535;
+
                         data[x + y * w + zval * w * h] = f;
                     }
                 }
@@ -68,107 +78,111 @@ namespace PTSharp
             return new Volume(w, h, d, zs, data, windows, box);
         }
         
-        public double Sample(double x, double y, double z) {
-            z = z / this.ZScale;
-            x = ((x + 1) / 2) * (double)this.W;
-            y = ((z + 1) / 2) * (double)this.H;
-            z = ((z + 2) / 2) * (double)this.D;
-            int x0 = (int)Math.Floor(x);
-            int y0 = (int)Math.Floor(y);
-            int z0 = (int)Math.Floor(z);
+        public double Sample(double x, double y, double z)
+        {
+            z /= ZScale;
+            x = ((x + 1) / 2) * (double)W;
+            y = ((z + 1) / 2) * (double)H;
+            z = ((z + 2) / 2) * (double)D;
+            var x0 = (int)Math.Floor(x);
+            var y0 = (int)Math.Floor(y);
+            var z0 = (int)Math.Floor(z);
             int x1 = x0 + 1;
             int y1 = y0 + 1;
             int z1 = z0 + 1;
-            double v000 = this.Get(x0, y0, z0); 
-            double v001 = this.Get(x0, y0, z1); 
-            double v010 = this.Get(x0, y1, z0); 
-            double v011 = this.Get(x0, y1, z1); 
-            double v100 = this.Get(x1, y0, z0); 
-            double v101 = this.Get(x1, y0, z1); 
-            double v110 = this.Get(x1, y1, z0); 
-            double v111 = this.Get(x1, y1, z1); 
-            x = x - (double)x0;
-            y = y - (double)y0;
-            z = z - (double)z0;
-            double c00 = v000 * (1 - x) + v100 * x;
-            double c01 = v001 * (1 - x) + v101 * x;
-            double c10 = v010 * (1 - x) + v110 * x;
-            double c11 = v011 * (1 - x) + v111 * x;
-            double c0 = c00 * (1 - y) + c10 * y;
-            double c1 = c01 * (1 - y) + c11 * y;
-            double c = c0 * (1 - z) + c1 * z;
+            var v000 = Get(x0, y0, z0); 
+            var v001 = Get(x0, y0, z1); 
+            var v010 = Get(x0, y1, z0); 
+            var v011 = Get(x0, y1, z1); 
+            var v100 = Get(x1, y0, z0); 
+            var v101 = Get(x1, y0, z1); 
+            var v110 = Get(x1, y1, z0); 
+            var v111 = Get(x1, y1, z1); 
+            x -= (double)x0;
+            y -= (double)y0;
+            z -= (double)z0;
+            var c00 = v000 * (1 - x) + v100 * x;
+            var c01 = v001 * (1 - x) + v101 * x;
+            var c10 = v010 * (1 - x) + v110 * x;
+            var c11 = v011 * (1 - x) + v111 * x;
+            var c0 = c00 * (1 - y) + c10 * y;
+            var c1 = c01 * (1 - y) + c11 * y;
+            var c = c0 * (1 - z) + c1 * z;
             return c;
         }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
-            return this.Box;
+            return Box;
         }
 
         void IShape.Compile() { }
         
-        internal int Sign(Vector a) {
-            double s = this.Sample(a.X, a.Y, a.Z);
-            foreach (VolumeWindow win in this.Windows)
+        internal int Sign(Vector a)
+        {
+            double s = Sample(a.X, a.Y, a.Z);
+            int i = 0;
+            foreach (VolumeWindow window in Windows)
             {
-                if (s < win.Lo)
+                if (s < window.Lo)
                 {
-                    return win.GetHashCode() + 1;
+                    return i + 1;
                 }
-                if (s > win.Hi)
+                if (s > window.Hi)
                 {
                     continue;
                 }
                 return 0;
             }
-            return this.Windows.Length + 1;
+            return Windows.Length + 1;
         }
 
-        Vector IShape.UV(Vector p) {
+        Vector IShape.UV(Vector p)
+        {
             return new Vector();
         }
 
-        Vector IShape.NormalAt(Vector p) {
+        Vector IShape.NormalAt(Vector p)
+        {
             double eps = 0.001;
-            Vector n = new Vector(this.Sample(p.X - eps, p.Y, p.Z) - this.Sample(p.X + eps, p.Y, p.Z),
-                                  this.Sample(p.X, p.Y - eps, p.Z) - this.Sample(p.X, p.Y + eps, p.Z),
-                                  this.Sample(p.X, p.Y, p.Z - eps) - this.Sample(p.X, p.Y, p.Z + eps));
+            Vector n = new Vector(Sample(p.X - eps, p.Y, p.Z) - Sample(p.X + eps, p.Y, p.Z),
+                                  Sample(p.X, p.Y - eps, p.Z) - Sample(p.X, p.Y + eps, p.Z),
+                                  Sample(p.X, p.Y, p.Z - eps) - Sample(p.X, p.Y, p.Z + eps));
             return n.Normalize();
         }
 
-        Material IShape.MaterialAt(Vector p) {
+        Material IShape.MaterialAt(Vector p)
+        {
             double be = 1e9;
             Material bm = new Material();
-            double s = this.Sample(p.X, p.Y, p.Z);
+            double s = Sample(p.X, p.Y, p.Z);
 
-            foreach(VolumeWindow Window in this.Windows)
+            foreach(var window in Windows)
             {
-                if (s >= Window.Lo && s <= Window.Hi)
+                if (s >= window.Lo && s <= window.Hi)
                 {
-                    return Window.Material;
+                    return window.VolumeWindowMaterial;
                 }
-                double e = Math.Min(Math.Abs(s - Window.Lo), Math.Abs(s - Window.Hi));
+                double e = Math.Min(Math.Abs(s - window.Lo), Math.Abs(s - window.Hi));
                 if (e < be)
                 {
                     be = e;
-                    bm = Window.Material;
+                    bm = window.VolumeWindowMaterial;
                 }
             }
             return bm;
         }
 
-        Hit IShape.Intersect(Ray ray) {
-            double[] tbool = this.Box.Intersect(ray);
-            double tmin = tbool[0];
-            double tmax = tbool[1];
-
+        Hit IShape.Intersect(Ray ray)
+        {
+            (double tmin, double tmax) = Box.Intersect(ray);
             double step = 1.0 / 512;
             double start = Math.Max(step, tmin);
             int sign = -1;
             for (double t = start; t <= tmax; t += step)
             {
                 Vector p = ray.Position(t);
-                int s = this.Sign(p);
+                int s = Sign(p);
 
                 if (s == 0 || (sign >= 0 && s != sign))
                 {
@@ -177,10 +191,11 @@ namespace PTSharp
                     t += step;
                     for (int i = 0; i < 64; i++)
                     {
-                        if (this.Sign(ray.Position(t)) == 0)
+                        if (Sign(ray.Position(t)) == 0)
                         {
                             return new Hit(this, t - step, null);
                         }
+                        t += step;
                     }
                 }
                 sign = s;
