@@ -64,25 +64,24 @@ namespace PTSharp
             }
 
             internal Hit Intersect(Ray r, double tmin, double tmax)
-            {                
-
-                switch(Axis)
+            {
+                if(Axis == Axis.AxisNone)
                 {
-                    case(Axis.AxisNone):
-                        return IntersectShapes(r);
-                    case(Axis.AxisX):
-                        tsplit = (Point - r.Origin.X) / r.Direction.X;
-                        leftFirst = (r.Origin.X < Point) || (r.Origin.X == Point && r.Direction.X <= 0);
-                        break;
-                    case(Axis.AxisY):
-                        tsplit = (Point - r.Origin.Y) / r.Direction.Y;
-                        leftFirst = (r.Origin.Y < Point) || (r.Origin.Y == Point && r.Direction.Y <= 0);
-                        break;
-                    case (Axis.AxisZ):
-                        tsplit = (Point - r.Origin.Z) / r.Direction.Z;
-                        leftFirst = (r.Origin.Z < Point) || (r.Origin.Z == Point && r.Direction.Z <= 0);
-                        break;
+                    return IntersectShapes(r);
+                } else if (Axis == Axis.AxisX)
+                {
+                    tsplit = (Point - r.Origin.X) / r.Direction.X;
+                    leftFirst = (r.Origin.X < Point) || (r.Origin.X == Point && r.Direction.X <= 0);
+                } else if (Axis == Axis.AxisY)
+                {
+                    tsplit = (Point - r.Origin.Y) / r.Direction.Y;
+                    leftFirst = (r.Origin.Y < Point) || (r.Origin.Y == Point && r.Direction.Y <= 0);
+                } else if (Axis == Axis.AxisZ)
+                {
+                    tsplit = (Point - r.Origin.Z) / r.Direction.Z;
+                    leftFirst = (r.Origin.Z < Point) || (r.Origin.Z == Point && r.Direction.Z <= 0);
                 }
+                
                 Node first, second; 
 
                 if(leftFirst)
@@ -158,14 +157,13 @@ namespace PTSharp
                     var b = list.ElementAt(list.Count() / 2);
                     return (a + b) / 2;
                 }
-
             }
                         
             public int PartitionScore(Axis axis, double point)
             {
                 (int left, int right) = (0, 0);
 
-                foreach (IShape shape in this.Shapes)
+                foreach (var shape in Shapes)
                 {
                     var box = shape.BoundingBox();
                     (bool l, bool r) = box.Partition(axis, point);
@@ -208,8 +206,8 @@ namespace PTSharp
                 return (left.ToArray(), right.ToArray());
             }
 
-            public void Split(int depth) {
-                
+            public void Split(int depth) 
+            {
                 if (Shapes.Length < 8)
                 {
                     return;
@@ -221,12 +219,12 @@ namespace PTSharp
 
                 foreach (var shape in Shapes) {
                     Box box = shape.BoundingBox();
-                    xs.Add(box.Min.X); //xs = append(xs, box.Min.X)
-                    xs.Add(box.Max.X); //xs = append(xs, box.Max.X)
-                    ys.Add(box.Min.Y); //ys = append(ys, box.Min.Y)
-                    ys.Add(box.Max.Y); //ys = append(ys, box.Max.Y)
-                    zs.Add(box.Min.Z); //zs = append(zs, box.Min.Z)
-                    zs.Add(box.Max.Z); //zs = append(zs, box.Max.Z)
+                    xs.Add(box.Min.X); 
+                    xs.Add(box.Max.X); 
+                    ys.Add(box.Min.Y); 
+                    ys.Add(box.Max.Y); 
+                    zs.Add(box.Min.Z); 
+                    zs.Add(box.Max.Z); 
                 }
 
                 xs.Sort();
@@ -263,14 +261,14 @@ namespace PTSharp
                     return;
                 }
 
-                (IShape[] l, IShape[] r) = Partition(best, bestAxis, bestPoint);
+                (var l, var r) = Partition(best, bestAxis, bestPoint);
                 Axis = bestAxis;
                 Point = bestPoint;
                 Left = NewNode(l);
                 Right = NewNode(r);
                 Left.Split(depth + 1);
                 Right.Split(depth + 1);
-                Shapes = null;
+                Shapes = null; // only needed at leaf nodes
             }
         }
     }
