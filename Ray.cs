@@ -1,16 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PTSharp
 {
     public class Ray
     {
         internal Vector Origin, Direction;
-        
+        internal bool reflect;
+
         internal Ray(Vector Origin_, Vector Direction_)
         {
             Origin = Origin_;
@@ -29,9 +25,9 @@ namespace PTSharp
         {
             var radius = Math.Sqrt(u);
             var theta = 2 * Math.PI * v;
-            Vector s = Direction.Cross(Vector.RandomUnitVector(rand)).Normalize();
-            Vector t = Direction.Cross(s);
-            Vector d = new Vector();
+            var s = Direction.Cross(Vector.RandomUnitVector(rand)).Normalize();
+            var t = Direction.Cross(s);
+            var d = new Vector();
             d = d.Add(s.MulScalar(radius * Math.Cos(theta)));
             d = d.Add(t.MulScalar(radius * Math.Sin(theta)));
             d = d.Add(Direction.MulScalar(Math.Sqrt(1 - u)));
@@ -47,16 +43,13 @@ namespace PTSharp
         {
             var n = info.Ray;
             var material = info.material;
-
+            
             (var n1, var n2) = (1.0, material.Index);
-
             if (info.inside)
             {
                 (n1, n2) = (n2, n1);
             }
-
             double p;
-
             if (material.Reflectivity >= 0)
             {
                 p = material.Reflectivity;
@@ -66,21 +59,18 @@ namespace PTSharp
                 p = n.Reflectance(this, n1, n2);
             }
 
-            bool reflect = false;
-
-            switch (bounceType)
+            //bool reflect = false;
+            if (bounceType == BounceType.BounceTypeAny)
             {
-                case BounceType.BounceTypeAny:
-                    reflect = rand.NextDouble() < p;
-                    break;
-                case BounceType.BounceTypeDiffuse:
-                    reflect = false;
-                    break;
-                case BounceType.BounceTypeSpecular:
-                    reflect = true;
-                    break;
+                reflect = rand.NextDouble() < p;
+            } else if (bounceType == BounceType.BounceTypeDiffuse)
+            {
+                reflect = false;
+            } else if (bounceType == BounceType.BounceTypeSpecular)
+            {
+                reflect = true;
             }
-            
+
             if (reflect)
             {
                 var reflected = n.Reflect(this);
