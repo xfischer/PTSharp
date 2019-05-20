@@ -27,17 +27,6 @@ namespace PTSharp
 
         public Color() { }
 
-        public void LoadFromStringArray(string[] data)
-        {
-            if (data.Length != 4)
-            {
-                return;
-            }
-            r = double.Parse(data[1]);
-            g = double.Parse(data[2]);
-            b = double.Parse(data[3]);
-        }
-
         public static Color NewColor(int r, int g, int b) => new Color((double)r / 65535, (double)g / 65535, (double)b / 65535);
 
         public static Color HexColor(int x)
