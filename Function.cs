@@ -33,7 +33,7 @@ namespace PTSharp
         
         void IShape.Compile() { }
 
-        Box IShape.GetBoundingBox()
+        Box IShape.BoundingBox()
         {
             return this.Box;
         }

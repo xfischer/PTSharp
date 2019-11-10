@@ -10,8 +10,8 @@ namespace PTSharp
     {
         static void Main(string[] args)
         {
-            int width = 1280;
-            int height = 720;
+            int width = 256;
+            int height = 144;
             Scene scene = new Scene();
             
             scene.Add(Sphere.NewSphere(new Vector(1.5, 1.25, 0), 1.25, Material.SpecularMaterial(Color.HexColor(0x004358), 1.3)));
@@ -25,10 +25,10 @@ namespace PTSharp
             camera.SetFocus(new Vector(-0.75, 1, -1), 0.1);
 
             DefaultSampler sampler = DefaultSampler.NewSampler(4, 8);
-            sampler.SMode = SpecularMode.SpecularModeFirst;
+            sampler.SetSpecularMode( SpecularMode.SpecularModeFirst);
 
             Renderer renderer = Renderer.NewRenderer(scene, camera, sampler, width, height);
-            renderer.IterativeRender("./out.png", 100);           
+            renderer.IterativeRender("./out.png", 200);           
         }
     }
 }

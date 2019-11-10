@@ -1,4 +1,3 @@
-using NativeInteropEx;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -260,7 +259,7 @@ namespace PTSharp
             {
                 header = Encoding.ASCII.GetString(br.ReadBytes(80));
                 var triCount = br.ReadUInt32();
-                mesh = br.BaseStream.ReadUnmanagedStructRange<STLTriangle>((int)triCount);
+                mesh = null; // br.BaseStream.ReadUnmanagedStructRange<STLTriangle>((int)triCount);
             }
 
             List<Triangle> tlist = new List<Triangle>();
